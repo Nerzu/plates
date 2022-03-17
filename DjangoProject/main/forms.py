@@ -1,10 +1,10 @@
-from .models import Node
+from .models import Note
 from django.forms import ModelForm, TextInput, Textarea
 
 
-class NodeForm(ModelForm):
+class NoteForm(ModelForm):
     class Meta:
-        model = Node
+        model = Note
         fields = ["title", "text"]
         widgets = {
             "title": TextInput(attrs={

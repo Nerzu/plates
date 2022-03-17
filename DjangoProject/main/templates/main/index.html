@@ -1,0 +1,19 @@
+{% extends 'main/base.html' %}
+
+{% block title %}
+{{ title }}
+{% endblock %}
+
+{% block content %}
+    <h1>Главная страница</h1>
+    {% if nodes %}
+    {% for element in nodes %}
+        <div class="alert alert-warning mt-2">
+            <h3>{{ element.title }}</h3>
+            <p>{{ element.text }}</p>
+        </div>
+    {% endfor %}
+    {% else %}
+        <p>Заметок не обнаружено</p>
+    {% endif %}
+{% endblock %}

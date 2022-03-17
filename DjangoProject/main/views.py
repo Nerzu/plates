@@ -1,11 +1,11 @@
 from django.shortcuts import render, redirect
-from .models import Node
-from .forms import NodeForm
+from .models import Note
+from .forms import NoteForm
 
 
 def index(request):
-    nodes = Node.objects.all()
-    return render(request, 'main/index.html', {'title': 'Главная страница сайта', 'nodes': nodes})
+    notes = Note.objects.all()
+    return render(request, 'main/index.html', {'title': 'Главная страница сайта', 'notes': notes})
 
 
 def about(request):
@@ -13,15 +13,15 @@ def about(request):
 
 def create(request):
     error = ''
-    if request.method == 'POST':
-        form = NodeForm(request.POST)
+    if request.method == 'POST': #здесь отправдяем на сервак заметку
+        form = NoteForm(request.POST)
         if form.is_valid():
             form.save()
             return redirect('home')
         else:
             error = 'Форма была не верной'
 
-    form = NodeForm()
+    form = NoteForm()
     context ={
         'form': form,
         'error': error

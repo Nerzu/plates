@@ -16,3 +16,18 @@ class NoteForm(ModelForm):
                 'placeholder': 'Введите содержание'
             })
         }
+
+class NoteForm(ModelForm):
+    class Meta:
+        model = Note
+        fields = ["title", "text"]
+        widgets = {
+            "title": TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Введите название'
+            }),
+            "text": Textarea(attrs={
+                'class': 'form-control',
+                'placeholder': 'Введите содержание'
+            })
+        }

@@ -15,10 +15,18 @@
         <a class="me-3 py-2 text-dark text-decoration-none" href="{% url 'home' %}">Главная</a>
         <a class="me-3 py-2 text-dark text-decoration-none" href="{% url 'about' %}">Про нас</a>
         <a class="me-3 py-2 text-dark text-decoration-none" href="{% url 'create_note' %}">Создать заметку</a>
+          {% if user.is_authenticated %}
+              <a class="me-3 py-2 text-dark text-decoration-none" href="{% url 'logout' %}">{{ user.username }} Выйти</a>
+          {% else %}
+              <a class="me-3 py-2 text-dark text-decoration-none" href="{% url 'login' %}">{{ user.username|default:'Войти' }}</a>
+          {% endif %}
+
+
       </nav>
     </div>
 
     <div class="container">
+      {% block sidebar %}{% endblock %}
         {% block content %}{% endblock %}
     </div>
 

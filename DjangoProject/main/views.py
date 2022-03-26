@@ -1,4 +1,8 @@
 from django.shortcuts import render, redirect
+from django.contrib.auth.models import User
+from django.urls import reverse_lazy
+from django.contrib.auth.forms import UserCreationForm
+from django.views.generic.edit import CreateView
 from .models import Note
 from .forms import NoteForm
 
@@ -35,8 +39,6 @@ def create(request):
     }
     return render(request, 'main/create.html', context)
 
-from django.contrib.auth.models import User
-
 def create_user(request):
     error = ''
     if request.method == 'POST':
@@ -46,13 +48,7 @@ def create_user(request):
         user.save()
         return redirect('home')
 
-def RegisterUser(request):
-    # form_class = UserCreatioForm
-    # template_name = "main/register.html"
-    # success_url = reverse_lazy('login')
-    #
-    # def get_content_data(self, *, object_list=None, **kwargs):
-    #     context = super().get_context_data(**kwargs)
-    #     c_def = self.get_user_context(title="Регистрация")
-    #     return dict(list(context.items()) + list(c_def.items()))
-    return render(request, 'main/register.html')
+class SignUp(CreateView):
+    form_class = UserCreationForm
+    success_url = reverse_lazy("login")
+    template_name = "registration/signup.html"

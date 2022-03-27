@@ -1,0 +1,35 @@
+GET http://0.0.0.0:10003/api/notes?user_uuid=b545d618-ff44-4319-9c88-2100d9928f12
+Accept: application/json
+
+### Get note
+
+GET http://0.0.0.0:10003/api/notes/624091d3fe84c979d99b632e
+Accept: application/json
+
+### Create note
+
+POST http://0.0.0.0:10003/api/notes
+Content-Type: application/json
+
+{
+  "header": "HeaderTest1",
+  "body": "TestBody1sdfsdfsfsdsdfsdfукпкапвапввапвапвапвапвапвапвапапвааацйцуйцуйцуцуккенорпвп",
+  "user_uuid": "b545d618-ff44-4319-9c88-2100d9928f12"
+
+}
+
+### Update note
+
+PATCH http://0.0.0.0:10003/api/notes/624091d3fe84c979d99b632e
+Content-Type: application/json
+
+{
+  "header": "BIIPBIPBIIIIIIP",
+  "body": "VrUMmm VruMMM"
+
+}
+
+### Delete note
+
+DELETE http://0.0.0.0:10003/api/notes/624091d3fe84c979d99b632e
+Content-Type: application/json

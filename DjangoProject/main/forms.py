@@ -16,4 +16,3 @@ class NoteForm(ModelForm):
                 'placeholder': 'Введите содержание'
             })
         }
-        

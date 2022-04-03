@@ -27,7 +27,7 @@ def create(request):
         form = NoteForm(request.POST)
         if form.is_valid():
             form.save()
-            string = form.title + ';' + form.text
+            # string = form.title + ';' + form.text
             return redirect('home')
         else:
             error = 'Форма была не верной'

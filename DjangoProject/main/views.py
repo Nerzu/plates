@@ -1,15 +1,25 @@
+from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
 from django.urls import reverse_lazy
 from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.decorators import login_required
 from django.views.generic.edit import CreateView
 from .models import Note
 from .forms import NoteForm
+from django.views import View
+import pyotp
+import time
+from . import models
 
 
+@login_required
 def index(request):
-    notes = Note.objects.all()
-    return render(request, 'main/index.html', {'title': 'Главная страница сайта', 'notes': notes})
+    if request.method == 'GET':
+        notes = Note.objects.all()
+        return render(request, 'main/index.html', {'title': 'Главная страница сайта', 'notes': notes})
+    elif request.method == 'POST':
+        return render(request, 'main/index.html', {'title': 'Главная страница сайта'})
 
 
 def about(request):
@@ -52,3 +62,24 @@ class SignUp(CreateView):
     form_class = UserCreationForm
     success_url = reverse_lazy("login")
     template_name = "registration/signup.html"
+
+#Get from https://pyauth.github.io/pyotp/
+def set_key(request):
+    totp = pyotp.TOTP('base32secret3232')
+    totp.now() # => '492039'
+    # OTP verified for current time
+    totp.verify('492039') # => True
+    time.sleep(30)
+    totp.verify('492039') # => False
+
+class AuthCheckView(View):
+    def get(self, request, pin):
+        auth_info_detail = models.AuthInformation.objects.first()
+        secret_key = auth_info_detail.secret_key
+        totp = pyotp.TOTP(secret_key)
+        print("Current OTP ", totp.now)
+        verification_status = totp.verify(pin)
+        if verification_status:
+            notes = Note.objects.all()
+            return render(request, 'main/index.html', {'title': 'Главная страница сайта', 'notes': notes})
+        return render(request, 'main/index.html', {'title': 'Главная страница сайта'})

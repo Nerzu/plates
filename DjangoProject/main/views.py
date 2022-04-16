@@ -30,7 +30,7 @@ def login(request):
 
 def logout(request):
     return render(request, 'registration/logged_out.html')
-
+#This is the comment
 def create(request):
     error = ''
     if request.method == 'POST': #здесь отправляем на сервак заметку

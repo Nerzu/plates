@@ -36,7 +36,8 @@ def create(request):
     if request.method == 'POST': #здесь отправляем на сервак заметку
         form = NoteForm(request.POST)
         if form.is_valid():
-            form.save()
+            #form.save2()
+            form.getnote("b545d618-ff44-4319-9c88-2100d9928f32")
             # string = form.title + ';' + form.text
             return redirect('home')
         else:

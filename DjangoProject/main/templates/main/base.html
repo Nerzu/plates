@@ -19,7 +19,7 @@
               <a class="me-3 py-2 text-dark text-decoration-none" href="{% url 'logout' %}">{{ user.username }} Выйти</a>
           {% else %}
               <a class="me-3 py-2 text-dark text-decoration-none" href="{% url 'signup' %}">Регистрация</a>
-              <a class="me-3 py-2 text-dark text-decoration-none" href="{% url 'login' %}">Войти</a>
+              <a class="me-3 py-2 text-dark text-decoration-none" href="{% url 'login_my' %}">Войти</a>
           {% endif %}
 
 

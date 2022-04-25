@@ -1,4 +1,3 @@
-<<<<<<< Updated upstream
 from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
 from django.urls import reverse_lazy
@@ -6,7 +5,6 @@ from django.contrib.auth.forms import UserCreationForm
 from django.views.generic.edit import CreateView
 from .models import Note
 from .forms import NoteForm
-=======
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, HttpResponseRedirect
 from django.urls import reverse
@@ -27,7 +25,6 @@ from django.views import View
 import pyotp
 import time
 from . import models
->>>>>>> Stashed changes
 
 def check_pin_google(pin, secret_key):
     totp = pyotp.TOTP(secret_key)
@@ -39,12 +36,11 @@ def check_pin_google(pin, secret_key):
         # return render(request, 'main/index.html', {'title': 'Главная страница сайта'})
         return False
 
-<<<<<<< Updated upstream
 def index(request):
     notes = Note.objects.all()
     return render(request, 'main/index.html', {'title': 'Главная страница сайта', 'notes': notes})
-=======
-# @login_required
+
+@login_required(login_url='login_my')
 def index(request):
     if request.method == 'GET':
         notes = Note.objects.all()
@@ -58,7 +54,6 @@ def index(request):
         return render(request, 'main/index.html', {'title': f'Главная страница сайта', 'notes': notes})
     elif request.method == 'POST':
         return render(request, 'main/index.html', {'title': 'Главная страница сайта'})
->>>>>>> Stashed changes
 
 def about(request):
     return render(request, 'main/about.html')
@@ -95,13 +90,9 @@ def create(request):
         form = NoteForm(request.POST)
         if form.is_valid():
             form.save()
-<<<<<<< Updated upstream
-            string = form.title + ';' + form.text
-=======
             #form.save2()
             # form.getnote("b545d618-ff44-4319-9c88-2100d9928f32")
             # string = form.title + ';' + form.text
->>>>>>> Stashed changes
             return redirect('home')
         else:
             error = 'Форма была не верной'
@@ -129,12 +120,10 @@ def create(request):
         # user.authinformation = acc
         # user.authinformation.save()
 
-<<<<<<< Updated upstream
 class SignUp(CreateView):
     form_class = UserCreationForm
     success_url = reverse_lazy("login")
     template_name = "registration/signup.html"
-=======
         # return redirect('home')
 
 # class SignUp(CreateView):
@@ -168,4 +157,3 @@ def set_key(request):
     totp.verify('492039') # => True
     time.sleep(30)
     totp.verify('492039') # => False
->>>>>>> Stashed changes

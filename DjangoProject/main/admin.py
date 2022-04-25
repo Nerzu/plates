@@ -5,10 +5,6 @@ from django.contrib.auth.models import User
 
 # Register your models here.
 from .models import Note
-<<<<<<< Updated upstream
-
-admin.site.register(Note)
-=======
 from .models import User
 # from .models import AuthInformation
 # #
@@ -27,4 +23,3 @@ from .models import User
 admin.site.register(Note)
 admin.site.register(User)
 # admin.site.register(AuthInformation)
->>>>>>> Stashed changes

@@ -1,8 +1,5 @@
-<<<<<<< Updated upstream
-=======
 # from django.contrib.auth.models import User
 from django.contrib.auth.models import AbstractUser
->>>>>>> Stashed changes
 from django.db import models
 
 # Create your models here.
@@ -19,9 +16,4 @@ class Note(models.Model):
 
     class Meta:
         verbose_name = 'Заметка'
-<<<<<<< Updated upstream
         verbose_name_plural = 'Заметки'
-=======
-        verbose_name_plural = 'Заметки'
-
->>>>>>> Stashed changes

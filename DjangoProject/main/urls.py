@@ -3,12 +3,8 @@ from . import views
 
 
 urlpatterns = [
-<<<<<<< Updated upstream
     path('', views.index, name='home'),
-=======
-    path('', views.index, name="home"),
     # path('home/<int:pin>', views.AuthCheckView.as_view(), name="home"),
->>>>>>> Stashed changes
     path('about', views.about, name='about'),
     path('create', views.create, name='create_note'),
     path('accounts/', include('django.contrib.auth.urls')),

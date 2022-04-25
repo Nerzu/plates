@@ -9,7 +9,6 @@ class UserLoginForm(AuthenticationForm):
     password = forms.CharField(widget=PasswordInput(attrs={'class': 'form-control py-4', 'placeholder': 'Введите пароль пльзователя'}))
     pin = forms.CharField(widget=PasswordInput(attrs={'class': 'form-control py-4', 'placeholder': 'Код из гугл аутентикатора'}))
 
-
     class Meta:
         model = User
         fields = ("username", "password", "pin")

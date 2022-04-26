@@ -1,15 +1,9 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth.models import User
-from django.urls import reverse_lazy
-from django.contrib.auth.forms import UserCreationForm
-from django.views.generic.edit import CreateView
-from .models import Note
-from .forms import NoteForm
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, HttpResponseRedirect
 from django.urls import reverse
 from django.contrib import auth
-from django.contrib.auth.models import User
+# from django.contrib.auth.models import User
 from django.urls import reverse_lazy
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.decorators import login_required
@@ -17,14 +11,14 @@ from django.contrib.auth.decorators import login_required
 from django.template import RequestContext
 
 from django.views.generic.edit import CreateView
-from .models import Note
-from .forms import NoteForm
-from .forms import UserLoginForm
+from .models import Note, User
+from .forms import NoteForm, UserLoginForm, TwoFactorForm, UserSignUpForm
 from .forms import UserSignUpForm
 from django.views import View
 import pyotp
 import time
 from . import models
+
 
 def check_pin_google(pin, secret_key):
     totp = pyotp.TOTP(secret_key)
@@ -59,9 +53,18 @@ def about(request):
     return render(request, 'main/about.html')
 
 def register(request):
-    form_class = UserCreationForm
-    # success_url = reverse_lazy("login")
-    return render(request, 'registration/signup.html', {'form': form_class})
+    if request.method == 'POST':
+        form = UserSignUpForm(data=request.POST)
+        secret_key = pyotp.random_base32()
+
+        if form.is_valid():
+            print(secret_key)
+            form.save()
+            return redirect('login_my')
+    else:
+        form_class = UserSignUpForm()
+        # success_url = reverse_lazy("login")
+        return render(request, 'registration/signup.html', {'form': form_class})
 
 def login(request):
     if request.method == 'POST':
@@ -69,17 +72,38 @@ def login(request):
         if form.is_valid():
             username = request.POST['username']
             password = request.POST['password']
-            pin = request.POST['pin']
             user = auth.authenticate(username=username, password=password)
             if user and user.is_active:
-                key = user.secret_key
-                if check_pin_google(pin, key):
-                    auth.login(request, user)
-                    return HttpResponseRedirect(reverse('home'))
+                request.session['pk'] = user.pk
+                return redirect('twofactor')
     else:
         form = UserLoginForm()
         context = {'form': form}
         return render(request, 'registration/login.html', context)
+
+def check_pin_code(request):
+    if request.method == 'POST':
+        form = TwoFactorForm(request.POST or None)
+        pk = request.session.get('pk')
+        if pk:
+            user = User.objects.get(pk=pk)
+            secret_key = user.secret_key
+            pin = request.POST['pin_code']
+            if form.is_valid():
+                totp = pyotp.TOTP(secret_key)
+                verification_status = totp.verify(pin)
+                if verification_status:
+                    notes = Note.objects.all()
+                    auth.login(request, user)
+                    return redirect('home')
+                else:
+                    return redirect('home')
+            return redirect('twofactor')
+        return render(request, 'twofactor', {'form': form})
+    else:
+        form = TwoFactorForm
+        context = {'form': form}
+        return render(request, 'registration/twofactor.html', context)
 
 def logout(request):
     return render(request, 'registration/logged_out.html')

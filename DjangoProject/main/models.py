@@ -1,7 +1,16 @@
-from django.contrib.auth.models import User
+from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 # Create your models here.
+class User(AbstractUser):
+    secret_key = models.CharField(max_length=255)
+    image = models.ImageField(upload_to='users_images', blank=True)
+
+class TwoFactor(models.Model):
+    pin_code = models.CharField(max_length=6)
+
+    def __str__(self):
+        return self.pin_code
 
 
 class Note(models.Model):
@@ -14,14 +23,3 @@ class Note(models.Model):
     class Meta:
         verbose_name = 'Заметка'
         verbose_name_plural = 'Заметки'
-
-class AuthInformation(models.Model):
-    secret_key = models.CharField(max_length=255)
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-
-    def __str__(self):
-        return f"AuthInfo - {self.user}"
-
-    # class Meta:
-    #     verbose_name = 'Key'
-    #     verbose_name_plural = 'Keys'

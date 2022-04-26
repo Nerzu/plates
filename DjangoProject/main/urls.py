@@ -12,4 +12,6 @@ urlpatterns = [
     path('accounts/logout/', views.logout, name='logout'),
     # path("signup/", views.SignUp.as_view(), name="signup"),
     path("signup/", views.register, name="signup"),
+    path("twofactor/", views.check_pin_code, name="twofactor"),
+    # path("signup/code/", views.check_pin_code, name="twofactor"),
 ]

@@ -24,10 +24,8 @@ def check_pin_google(pin, secret_key):
     totp = pyotp.TOTP(secret_key)
     verification_status = totp.verify(pin)
     if verification_status:
-        # return render(request, 'main/index.html', {'title': 'Главная страница сайта', 'notes': notes})
         return True
     else:
-        # return render(request, 'main/index.html', {'title': 'Главная страница сайта'})
         return False
 
 def index(request):
@@ -38,13 +36,6 @@ def index(request):
 def index(request):
     if request.method == 'GET':
         notes = Note.objects.all()
-        #
-        # u = User.objects.get(username='test')
-        # johny_key = u.authinformation.secret_key
-        #
-        # auth_info_detail = models.AuthInformation.objects.first()
-        # secret_key = auth_info_detail.secret_key
-        # totp = pyotp.TOTP(secret_key)
         return render(request, 'main/index.html', {'title': f'Главная страница сайта', 'notes': notes})
     elif request.method == 'POST':
         return render(request, 'main/index.html', {'title': 'Главная страница сайта'})
@@ -53,17 +44,23 @@ def about(request):
     return render(request, 'main/about.html')
 
 def register(request):
+    if request.user.is_authenticated:
+        return redirect('home')
+
     if request.method == 'POST':
         form = UserSignUpForm(data=request.POST)
+        user_name = request.POST.get('username')
         secret_key = pyotp.random_base32()
-
         if form.is_valid():
-            print(secret_key)
             form.save()
-            return redirect('login_my')
+            user = User.objects.filter(username=user_name).first()
+            user.secret_key = secret_key
+            user.save(update_fields=['secret_key'])
+            return render(request, 'registration/show_code.html', {'show_code_text': secret_key})
+        else:
+            return render(request, 'registration/signup.html', {'form': form})
     else:
         form_class = UserSignUpForm()
-        # success_url = reverse_lazy("login")
         return render(request, 'registration/signup.html', {'form': form_class})
 
 def login(request):

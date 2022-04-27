@@ -9,6 +9,7 @@ urlpatterns = [
     path('create', views.create, name='create_note'),
     path('accounts/', include('django.contrib.auth.urls')),
     path('main/login/', views.login, name='login_my'),
+    path('main/twofactor/', views.check_pin_code, name='twofactor'),
     path('accounts/logout/', views.logout, name='logout'),
     # path("signup/", views.SignUp.as_view(), name="signup"),
     path("signup/", views.register, name="signup"),

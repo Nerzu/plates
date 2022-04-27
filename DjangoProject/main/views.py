@@ -44,15 +44,14 @@ def about(request):
     return render(request, 'main/about.html')
 
 def register(request):
-    if request.user.is_authenticated:
-        return redirect('home')
-
     if request.method == 'POST':
         form = UserSignUpForm(data=request.POST)
         user_name = request.POST.get('username')
         secret_key = pyotp.random_base32()
         if form.is_valid():
             form.save()
+            if request.user.is_authenticated:
+                return redirect('home')
             user = User.objects.filter(username=user_name).first()
             user.secret_key = secret_key
             user.save(update_fields=['secret_key'])
@@ -60,6 +59,8 @@ def register(request):
         else:
             return render(request, 'registration/signup.html', {'form': form})
     else:
+        if request.user.is_authenticated:
+            return redirect('home')
         form_class = UserSignUpForm()
         return render(request, 'registration/signup.html', {'form': form_class})
 
@@ -73,6 +74,8 @@ def login(request):
             if user and user.is_active:
                 request.session['pk'] = user.pk
                 return redirect('twofactor')
+            return redirect('login_my')
+        return redirect('login_my')
     else:
         form = UserLoginForm()
         context = {'form': form}

@@ -1,23 +1,16 @@
-from django.shortcuts import render, redirect
-from django.http import JsonResponse
 from django.shortcuts import render, redirect, HttpResponseRedirect
-from django.urls import reverse
 from django.contrib import auth
-# from django.contrib.auth.models import User
 from django.urls import reverse_lazy
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.decorators import login_required
-
-from django.template import RequestContext
 
 from django.views.generic.edit import CreateView
 from .models import Note, User
 from .forms import NoteForm, UserLoginForm, TwoFactorForm, UserSignUpForm
 from .forms import UserSignUpForm
-from django.views import View
+from django.contrib import messages
 import pyotp
 import time
-from . import models
 
 
 def check_pin_google(pin, secret_key):
@@ -66,6 +59,7 @@ def register(request):
 
 def login(request):
     if request.method == 'POST':
+        print('hello')
         form = UserLoginForm(data=request.POST)
         if form.is_valid():
             username = request.POST['username']
@@ -74,8 +68,10 @@ def login(request):
             if user and user.is_active:
                 request.session['pk'] = user.pk
                 return redirect('twofactor')
-            return redirect('login_my')
-        return redirect('login_my')
+            else:
+                return render(request, 'registration/login.html', {'form': form})
+        else:
+            return render(request, 'registration/login.html', {'form': form})
     else:
         form = UserLoginForm()
         context = {'form': form}
@@ -93,13 +89,14 @@ def check_pin_code(request):
                 totp = pyotp.TOTP(secret_key)
                 verification_status = totp.verify(pin)
                 if verification_status:
-                    notes = Note.objects.all()
                     auth.login(request, user)
                     return redirect('home')
                 else:
-                    return redirect('home')
-            return redirect('twofactor')
-        return render(request, 'twofactor', {'form': form})
+                    return redirect('twofactor')
+            else:
+                return redirect('twofactor')
+        else:
+            return redirect('login_my')
     else:
         form = TwoFactorForm
         context = {'form': form}

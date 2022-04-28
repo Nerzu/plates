@@ -4,8 +4,22 @@
 Регистрация
 {% endblock %}
 
+
+
 {% block content %}
     <h1>Signup</h1>
+<div>
+    {% if form.errors %}
+    {% for field in form %}
+        {% for error in field.errors %}
+          {{ error }}<br>
+        {% endfor %}
+    {% endfor %}
+    {% for error in form.non_field_errors %}
+        {{ error }}<br>
+    {% endfor %}
+{% endif %}
+</div>
 <form method="post">
     {% csrf_token %}
     <div class="form-group">

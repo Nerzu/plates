@@ -1,0 +1,26 @@
+{% extends 'main/base.html' %}
+
+{% block title %}
+Редакировать заметку
+{% endblock %}
+
+{% block content %}
+    <h1>Редакировать заметку</h1>
+    <form method="POST">
+        {% csrf_token %}
+        <p>
+            <label>Введите заголовок</label>
+            <input type="text" name="title" value="{{ form.title }}" />
+        </p>
+        <p>
+            <label>Введите содержание</label>
+            <input type="text" name="text" value="{{ form.text }}" />
+        </p>
+
+{#        {{ form.title }}<br>#}
+{#        {{ form.text }}<br>#}
+        <button type="submit" class="btn btn-success">Редактировать</button>
+        <span>{{ error }}</span>
+    </form>
+    
+{% endblock %}

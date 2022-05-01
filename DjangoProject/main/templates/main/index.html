@@ -9,8 +9,10 @@
     {% if notes %}
     {% for element in notes %}
         <div class="alert alert-warning mt-2">
+            <td>id:{{ element.id }}</td>
             <h3>{{ element.title }}</h3>
             <p>{{ element.text }}</p>
+        <td><a href="edit/{{element.id}}">Изменить</a> | <a href="delete/{{element.id}}">Удалить</a></td>
         </div>
     {% endfor %}
     {% else %}

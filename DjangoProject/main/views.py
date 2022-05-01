@@ -125,31 +125,28 @@ def create(request):
     }
     return render(request, 'main/create.html', context)
 
-# def create_user(request):
-#     error = ''
-#     if request.method == 'POST':
-#         user = User.objects.create_user('myusernameme', 'myemail@crazymail.com', 'mypassword')
-#         user.first_name = 'John'
-#         user.last_name = 'Citizen'
-#         user.save()
-#         # acc = models.AuthInformation(secret_key='base32secret3111')
-        # acc.secret_key = "base32secret3111"
-        # user.authinformation = acc
-        # user.authinformation.save()
-        # tom = User.objects.create(username="Tom")
-        # acc = models.AuthInformation(secret_key=pyotp.random_base32())
-        # user.authinformation = acc
-        # user.authinformation.save()
+def edit(request, id):
+    try:
+        note = Note.objects.get(id=id)
+        if request.method == 'POST':
+            note.title = request.POST['title']
+            note.text = request.POST['text']
+            note.save()
+            return redirect('home')
+        else:
+            return render(request, "main/edit.html", {"form": note})
+    except Note.DoesNotExist:
+        return redirect('home')
+
+def delete(request, id):
+    try:
+        note = Note.objects.get(id=id)
+        note.delete()
+        return redirect('home')
+    except Note.DoesNotExist:
+        return redirect('home')
 
 class SignUp(CreateView):
     form_class = UserCreationForm
     success_url = reverse_lazy("login")
     template_name = "registration/signup.html"
-
-def set_key(request):
-    totp = pyotp.TOTP('base32secret3232')
-    totp.now() # => '492039'
-    # OTP verified for current time
-    totp.verify('492039') # => True
-    time.sleep(30)
-    totp.verify('492039') # => False

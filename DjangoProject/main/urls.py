@@ -7,6 +7,8 @@ urlpatterns = [
     # path('home/<int:pin>', views.AuthCheckView.as_view(), name="home"),
     path('about', views.about, name='about'),
     path('create', views.create, name='create_note'),
+    path('edit/<int:id>', views.edit, name='edit_note'),
+    path('delete/<int:id>', views.delete, name='delete_note'),
     path('accounts/', include('django.contrib.auth.urls')),
     path('main/login/', views.login, name='login_my'),
     path('main/twofactor/', views.check_pin_code, name='twofactor'),

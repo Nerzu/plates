@@ -32,11 +32,14 @@ func (s *db) Create(ctx context.Context, note note.Note) (uuid string, err error
 	nCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 	result, err := s.collection.InsertOne(nCtx, note)
+	//fmt.Println("result::", result)
 	if err != nil {
 		return "", fmt.Errorf("failed to execute query. error: %w", err)
 	}
 
 	oid, ok := result.InsertedID.(primitive.ObjectID)
+	//fmt.Println("testoid:::::", oid)
+	//fmt.Println("testoidhex:::::", oid.Hex())
 	if ok {
 		return oid.Hex(), nil
 	}
@@ -48,13 +51,10 @@ func (s *db) FindOne(ctx context.Context, uuid string) (n note.Note, err error) 
 	if err != nil {
 		return n, fmt.Errorf("failed to convert hex to objectid. error: %w", err)
 	}
-
 	filter := bson.M{"_id": objectID}
-
 	opts := options.FindOneOptions{
 		Projection: bson.M{"short_body": 0},
 	}
-
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 	result := s.collection.FindOne(ctx, filter, &opts)
@@ -68,20 +68,20 @@ func (s *db) FindOne(ctx context.Context, uuid string) (n note.Note, err error) 
 	if err = result.Decode(&n); err != nil {
 		return n, fmt.Errorf("failed to decode document. error: %w", err)
 	}
-
 	return n, nil
 }
 
 func (s *db) FindByUserUUID(ctx context.Context, userUUID string) (notes []note.Note, err error) {
-	opts := options.FindOptions{
+	/*opts := options.FindOptions{
 		Projection: bson.M{"body": 0},
-	}
+	}*/
 
 	filter := bson.M{"user_uuid": bson.M{"$eq": userUUID}}
 
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	cur, err := s.collection.Find(ctx, filter, &opts)
+	//cur, err := s.collection.Find(ctx, filter, &opts)
+	cur, err := s.collection.Find(ctx, filter)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return notes, apperror.ErrNotFound

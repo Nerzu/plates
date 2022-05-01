@@ -86,10 +86,20 @@ func (h *Handler) CreateNote(w http.ResponseWriter, r *http.Request) error {
 	h.Logger.Debug("decode create tag dto")
 	var dto CreateNoteDTO
 	defer r.Body.Close()
+	/*fmt.Println("rBODY cheeeck::::", r.Body)
+	fmt.Println("HOST::", r.Host)
+	fmt.Println("URL::", r.URL)
+	fmt.Println("HEADER::", r.Header)*/
 	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
 		return apperror.BadRequestError("invalid data")
 	}
-
+	/*fmt.Println("test dto check: ", dto)
+	fmt.Println("dto.UserUUID", dto.UserUUID)
+	fmt.Println("dto.Body", dto.Body)*/
+	//fmt.Println("md5hash::", md5.Sum([]byte(dto.Body)))
+	//hash := md5.Sum([]byte(dto.Body))
+	//dto.Body = hex.EncodeToString(hash[:])
+	//fmt.Println("dto: ", dto)
 	noteUUID, err := h.NoteService.Create(r.Context(), dto)
 	if err != nil {
 		return err

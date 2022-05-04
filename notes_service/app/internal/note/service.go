@@ -32,7 +32,8 @@ type Service interface {
 
 func (s service) Create(ctx context.Context, dto CreateNoteDTO) (noteUUID string, err error) {
 	note := NewNote(dto)
-	note.GenerateShortBody()
+	/*fmt.Println("new dto: ", dto)
+	fmt.Println("new note: ", note)*/
 	noteUUID, err = s.storage.Create(ctx, note)
 
 	if err != nil {
@@ -73,7 +74,7 @@ func (s service) GetByUserUUID(ctx context.Context, uuid string) (notes []Note, 
 }
 
 func (s service) Update(ctx context.Context, dto UpdateNoteDTO) error {
-	if dto.Body == "" && dto.Header == "" && dto.UserUUID == "" {
+	if dto.Body == "" && dto.UserUUID == "" {
 		return apperror.BadRequestError("nothing to update")
 	}
 	note := UpdatedNote(dto)

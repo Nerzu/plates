@@ -4,14 +4,20 @@
 Создать заметку
 {% endblock %}
 
+
+
 {% block content %}
     <h1>Создать заметку</h1>
     <form method="post">
-        {% csrf_token %}
+    <p id="paragraph"></p>
         {{ form.title }}<br>
         {{ form.text }}<br>
+        <input type="text" value="Hello,1111 World!" class="form-control"><br>
         <button type="submit" class="btn btn-success">Добавить</button>
+        <button onclick="encryptAndSendMsg()">Send message</button>
         <span>{{ error }}</span>
     </form>
-    
+    <script src="/static/client.js"></script>
+
 {% endblock %}
+

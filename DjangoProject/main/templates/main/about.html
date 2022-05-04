@@ -1,10 +1,29 @@
 {% extends 'main/base.html' %}
-
 {% block title %}
 Страница про нас
 {% endblock %}
 
+
 {% block content %}
+    <p id="paragraph"></p>
     <h1>Страница о нас</h1>
     <p1>Страница о нас</p1>
+    {{ form.title }}<br>
+    {{ form.text }}<br>
+{#    <input type="text" value="value2" class="form-control">#}
+{#    <input type="text" id="rsa-oaep-message" name="message" size="25" value="Text to rsa encrypt">#}
+    <button onclick="myFunctionClient()"  class="btn btn-primary btn-send">hello</button>
+    <button onclick="encryptAndSendMsg()"  class="btn btn-primary btn-send">send</button>
+
+
+{#    <div class="ciphertext">Ciphertext:<span class="ciphertext-value"></span></div>#}
+{#            <div class="decrypted">Decrypted:<span class="decrypted-value"></span></div>#}
+{#            <input class="encrypt-button" type="button" value="Encrypt">#}
+{#            <input class="decrypt-button" type="button" value="Decrypt">#}
+{#    </div>#}
+
+
+<script src="/static/client.js"></script>
+{#<script src="/static/rsa_crypt.js"></script>#}
 {% endblock %}
+

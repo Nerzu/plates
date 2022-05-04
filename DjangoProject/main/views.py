@@ -1,16 +1,17 @@
-from django.shortcuts import render, redirect, HttpResponseRedirect
-from django.contrib import auth
-from django.urls import reverse_lazy
-from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth.decorators import login_required
-
-from django.views.generic.edit import CreateView
-from .models import Note, User
-from .forms import NoteForm, UserLoginForm, TwoFactorForm, UserSignUpForm
-from .forms import UserSignUpForm
-from django.contrib import messages
+import json
 import pyotp
-import time
+from django.contrib import auth
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import UserCreationForm
+from django.http import JsonResponse
+from django.shortcuts import render, redirect
+from django.urls import reverse_lazy
+from django.views.decorators.csrf import csrf_exempt
+from django.views.generic.edit import CreateView
+
+from .forms import NoteForm, UserLoginForm, TwoFactorForm
+from .forms import UserSignUpForm
+from .models import Note, User
 
 
 def check_pin_google(pin, secret_key):
@@ -21,12 +22,47 @@ def check_pin_google(pin, secret_key):
     else:
         return False
 
-def index(request):
-    notes = Note.objects.all()
-    return render(request, 'main/index.html', {'title': 'Главная страница сайта', 'notes': notes})
+# def index(request):
+#     notes = Note.objects.all()
+#     return render(request, 'main/index.html', {'title': 'Главная страница сайта', 'notes': notes})
+
+class DH_Endpoint():
+   def __init__(self, public_key1, public_key2, private_key):
+       self.public_key1 = public_key1
+       self.public_key2 = public_key2
+       self.private_key = private_key
+       self.full_key = None
+
+   def generate_partial_key(self):
+       partial_key = self.public_key1 ** self.private_key
+       partial_key = partial_key % self.public_key2
+       return partial_key
+
+   def generate_full_key(self, partial_key_r):
+       full_key = partial_key_r ** self.private_key
+       full_key = full_key % self.public_key2
+       self.full_key = full_key
+       return full_key
+
+   def encrypt_message(self, message):
+       encrypted_message = ""
+       key = self.full_key
+       for c in message:
+           encrypted_message += chr(ord(c) + key)
+       return encrypted_message
+
+   def decrypt_message(self, encrypted_message):
+       decrypted_message = ""
+       key = self.full_key
+       for c in encrypted_message:
+           decrypted_message += chr(ord(c) - key)
+       return decrypted_message
+
+
 
 @login_required(login_url='login_my')
 def index(request):
+    print(request)
     if request.method == 'GET':
         notes = Note.objects.all()
         return render(request, 'main/index.html', {'title': f'Главная страница сайта', 'notes': notes})
@@ -34,7 +70,12 @@ def index(request):
         return render(request, 'main/index.html', {'title': 'Главная страница сайта'})
 
 def about(request):
-    return render(request, 'main/about.html')
+    print(request)
+    form = NoteForm()
+    context = {
+        'form': form,
+    }
+    return render(request, 'main/about.html', context)
 
 def register(request):
     if request.method == 'POST':
@@ -105,16 +146,53 @@ def check_pin_code(request):
 def logout(request):
     return render(request, 'registration/logged_out.html')
 
+@csrf_exempt
+def key_ssl(request):
+
+
+    # key_client = json.loads(request.body)
+    #
+    # print(key_client)
+    print(request.method)
+    if request.method == 'GET':
+        print(request.GET['client_partial'])
+        print('123213')
+        response = {
+            'is_key': 123456789
+        }
+        return JsonResponse(response)
+
+    if request.method == 'GET':
+        key = {'key': '1111111111111'}
+
+        json_data = json.dumps(key)
+
+
+        return json_data
+
+    elif request.method == 'POST':
+        json_body = json.loads(request.body)
+        print(json_body)
+
+@csrf_exempt
 def create(request):
+    print(request)
     error = ''
     if request.method == 'POST': #здесь отправляем на сервак заметку
+
+        # json_body = json.loads(request.body)
+        # print(str(json_body))
         form = NoteForm(request.POST)
+        # form.title=json_body["iv"]
+        # form.text=json_body["cipher"]
+        # form.save()
+
         if form.is_valid():
             form.save()
             #form.save2()
             # form.getnote("b545d618-ff44-4319-9c88-2100d9928f32")
             # string = form.title + ';' + form.text
-            return redirect('home')
+            # return redirect('home')
         else:
             error = 'Форма была не верной'
 

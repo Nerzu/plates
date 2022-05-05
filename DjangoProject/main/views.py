@@ -1,6 +1,8 @@
 import json
 import pyotp
 import random
+import requests
+import re
 from django.contrib import auth
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
@@ -66,9 +68,44 @@ class DH_Endpoint():
 
 @login_required(login_url='login_my')
 def index(request):
-    print(request)
+#    print(request)
+#    if request.method == 'GET':
+#        notes = Note.objects.all()
+#        return render(request, 'main/index.html', {'title': f'Главная страница сайта', 'notes': notes})
+#    elif request.method == 'POST':
+#        return render(request, 'main/index.html', {'title': 'Главная страница сайта'})
     if request.method == 'GET':
-        notes = Note.objects.all()
+        user_uid = request.user.id
+        # note = Note()
+        # note.print_note(user_uid)
+        notes = []
+#        response = requests.get(f'http://0.0.0.0:10003/api/notes?user_uuid={user_uid}')
+        response = requests.get(f'http://84.38.180.103:10003/api/notes?user_uuid={user_uid}')
+#        response = requests.get('http://127.0.0.1:53210')
+        if response:
+            #            for item in re.findall('{[^{}]*}', response.text):
+            #                note_dict = json.loads(json.dumps(item))
+            #                note = Note()
+            #                note.title = note_dict["header"]
+            #                note.text = note_dict["body"]
+            #                print(note_dict)
+            #                notes.append(note)
+            result = re.findall('{[^{}]*}', response.text)
+            for i in range(0, len(result)):
+                response_dict = json.loads(result[i])
+                keys_merge = "".join(response_dict)
+                print(keys_merge)
+                if "uuidheaderbodyuser_uuid" in keys_merge:
+                    note = {}
+                    for key in response_dict:
+                        if "uuid" in key:
+                            note["id"] = response_dict[key]
+                        if "header" in key:
+                            note["title"] = response_dict[key]
+                        if "body" in key:
+                            note["text"] = response_dict[key]
+                notes.append(note)
+        # notes = Note.objects.all()
         return render(request, 'main/index.html', {'title': f'Главная страница сайта', 'notes': notes})
     elif request.method == 'POST':
         return render(request, 'main/index.html', {'title': 'Главная страница сайта'})
@@ -194,7 +231,7 @@ def finish_dh(request):
 
 @csrf_exempt
 def create(request):
-    print(request)
+#    print(request)
     error = ''
     if request.method == 'POST': #здесь отправляем на сервак заметку
 
@@ -206,8 +243,8 @@ def create(request):
         # form.save()
 
         if form.is_valid():
-            form.save()
-            #form.save2()
+#            form.save()
+            form.save2()
             # form.getnote("b545d618-ff44-4319-9c88-2100d9928f32")
             # string = form.title + ';' + form.text
             # return redirect('home')
@@ -223,21 +260,43 @@ def create(request):
 
 def edit(request, id):
     try:
-        note = Note.objects.get(id=id)
+        #note = Note.objects.get(id=id)
+#        response = requests.get(f'http://0.0.0.0:10003/api/notes/{id}')
+        response = requests.get(f'http://84.38.180.103:10003/api/notes/{id}')
+#        response = requests.get('http://127.0.0.1:53211')
+        #note_dict = response.json()
+        result = re.findall('{[^{}]*}', response.text)
+        response_dict = json.loads(result[0])
+        keys_merge = "".join(response_dict)
+#        if "uuidheaderbodyuser_uuid" in keys_merge:
+        note = {}
+        for key in response_dict:
+            if "uuid" in key:
+                note["uuid"] = response_dict[key]
+            if "header" in key:
+                note["title"] = response_dict[key]
+            if "body" in key:
+                note["text"] = response_dict[key]
         if request.method == 'POST':
-            note.title = request.POST['title']
-            note.text = request.POST['text']
-            note.save()
+            title = request.POST['title']
+            text = request.POST['text']
+#            note.save()
+            request_data = {'header': title, 'body': text}
+            data = json.dumps(request_data, indent=2).encode('utf-8')
+#            response = requests.patch(f'http://0.0.0.0:10003/api/{id}', data)
+            response = requests.patch(f'http://84.38.180.103:10003/api/{id}', data)
             return redirect('home')
         else:
-            return render(request, "main/edit.html", {"form": note})
+            return render(request, "main/edit.html", {"note": note})
     except Note.DoesNotExist:
         return redirect('home')
 
 def delete(request, id):
     try:
-        note = Note.objects.get(id=id)
-        note.delete()
+#        note = Note.objects.get(id=id)
+#        note.delete()
+#        response = requests.delete(f'http://0.0.0.0:10003/api/{id}')
+        response = requests.delete(f'http://84.38.180.103:10003/api/{id}')
         return redirect('home')
     except Note.DoesNotExist:
         return redirect('home')

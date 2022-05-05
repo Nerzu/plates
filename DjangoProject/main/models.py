@@ -1,5 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+import json
+import requests
 
 # Create your models here.
 class User(AbstractUser):

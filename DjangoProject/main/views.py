@@ -81,7 +81,7 @@ def index(request):
         notes = []
 #        response = requests.get(f'http://0.0.0.0:10003/api/notes?user_uuid={user_uid}')
         response = requests.get(f'http://84.38.180.103:10003/api/notes?user_uuid={user_uid}')
-        #response = requests.get('http://127.0.0.1:53210')
+#        response = requests.get('http://127.0.0.1:53210')
         if response:
             #            for item in re.findall('{[^{}]*}', response.text):
             #                note_dict = json.loads(json.dumps(item))
@@ -99,7 +99,7 @@ def index(request):
                     note = {}
                     for key in response_dict:
                         if "uuid" in key:
-                            note["uuid"] = response_dict[key]
+                            note["id"] = response_dict[key]
                         if "header" in key:
                             note["title"] = response_dict[key]
                         if "body" in key:

@@ -74,7 +74,6 @@ func (s *db) FindHeadersByUserUUID(ctx context.Context, userUUID string) (notes 
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 	cur, err := s.collection.Find(ctx, filter, &opts)
-	fmt.Println("cur: ", cur)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return notes, apperror.ErrNotFound
@@ -82,7 +81,6 @@ func (s *db) FindHeadersByUserUUID(ctx context.Context, userUUID string) (notes 
 		return notes, fmt.Errorf("failed to execute query. error: %w", err)
 	}
 	if err = cur.All(ctx, &notes); err == nil {
-		fmt.Println("notes cur: ", notes)
 		return notes, nil
 	}
 

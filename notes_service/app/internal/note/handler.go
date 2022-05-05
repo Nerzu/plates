@@ -47,12 +47,10 @@ func (h *Handler) GetHeadersByUser(w http.ResponseWriter, r *http.Request) error
 	if err != nil {
 		return err
 	}
-	fmt.Println("notes: ", notes)
 	notesBytes, err := json.Marshal(notes)
 	if err != nil {
 		return err
 	}
-	fmt.Println("notesBytes: ", notesBytes)
 	w.WriteHeader(http.StatusOK)
 	w.Write(notesBytes)
 

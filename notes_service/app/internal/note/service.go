@@ -43,7 +43,7 @@ func (s service) GetHeadersByUserUUID(ctx context.Context, uuid string) (notes [
 	if len(notes) == 0 {
 		return notes, apperror.ErrNotFound
 	}
-	fmt.Println("notesService: ", notes)
+
 	return notes, nil
 }
 

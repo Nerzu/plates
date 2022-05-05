@@ -31,18 +31,6 @@ function bigPowMod(a, b, c) {
         return result;
       }
 
-// function powMod(base, pow, mod) {
-//             console.log("base:",typeof base,base)
-//         console.log("pow:",typeof pow,pow)
-//         console.log("mod:",typeof mod,mod)
-//     var i, result = 1;
-//     for (i = 0; i < pow; i++) {
-//         result *= base;
-//         result %= mod;
-//     }
-//     return result;
-// }
-
 function power (a,n,p) {
     if (n === 0) {
         return 1
@@ -52,8 +40,6 @@ function power (a,n,p) {
         } else ((a * power(a, n - 1, p))) % p
     }
 }
-
-
 
 const generateKey = async () =>
     window.crypto.subtle.generateKey({
@@ -129,7 +115,7 @@ const encryptAndSendMsg = async () => {
     const msg = input_text.value
 
     // шифрование
-    key = await generateKey()
+    // key = await generateKey()
 
     url = 'http://127.0.0.1:8000/key_ssl'
     // url+= '?client_partial=11111111111111' //+ pack(key)
@@ -160,17 +146,12 @@ const encryptAndSendMsg = async () => {
     console.log("private_key_client:", typeof private_key_client, private_key_client)
 
     var key_client = bigPowMod(key_p_server,private_key_client, key_p)
-    // var key_client = key_p_server.pow(private_key_client) % key_p
-    // key_client = bigInt2str(key_client, base);
     console.log("key_client:",key_client)
 
-
     console.log("title:",title)
-    console.log("text:",text)
-
+    console.log("text:",msg)
 
     var key_full = bigPowMod(key_server, private_key_client, key_p)
-    // var key_full = key_server.pow(private_key_client) % key_p
     console.log("key_full:",key_full)
 
     let response_two = await fetch(url,
@@ -190,7 +171,6 @@ const encryptAndSendMsg = async () => {
     // let text_two = await response.text(); // прочитать тело ответа как текст
     // console.log(text)
     // let response_json_two = JSON.parse(text_two)
-
 
     // const {
     //     cipher,

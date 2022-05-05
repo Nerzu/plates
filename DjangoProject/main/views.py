@@ -68,12 +68,6 @@ class DH_Endpoint():
 
 @login_required(login_url='login_my')
 def index(request):
-#    print(request)
-#    if request.method == 'GET':
-#        notes = Note.objects.all()
-#        return render(request, 'main/index.html', {'title': f'Главная страница сайта', 'notes': notes})
-#    elif request.method == 'POST':
-#        return render(request, 'main/index.html', {'title': 'Главная страница сайта'})
     if request.method == 'GET':
         user_uid = request.user.id
         # note = Note()
@@ -83,13 +77,7 @@ def index(request):
         response = requests.get(f'http://84.38.180.103:10003/api/notes?user_uuid={user_uid}')
 #        response = requests.get('http://127.0.0.1:53210')
         if response:
-            #            for item in re.findall('{[^{}]*}', response.text):
-            #                note_dict = json.loads(json.dumps(item))
-            #                note = Note()
-            #                note.title = note_dict["header"]
-            #                note.text = note_dict["body"]
-            #                print(note_dict)
-            #                notes.append(note)
+
             result = re.findall('{[^{}]*}', response.text)
             for i in range(0, len(result)):
                 response_dict = json.loads(result[i])
@@ -98,11 +86,11 @@ def index(request):
                 if "uuidheaderbodyuser_uuid" in keys_merge:
                     note = {}
                     for key in response_dict:
-                        if "uuid" in key:
+                        if "uuid" == key:
                             note["id"] = response_dict[key]
-                        if "header" in key:
+                        if "header" == key:
                             note["title"] = response_dict[key]
-                        if "body" in key:
+                        if "body" == key:
                             note["text"] = response_dict[key]
                 notes.append(note)
         # notes = Note.objects.all()
@@ -190,7 +178,6 @@ def logout(request):
 @csrf_exempt
 def key_ssl(request):
 
-
     if request.method == 'GET':
         session_key = random.getrandbits(256)
         private_key = random.getrandbits(256)
@@ -223,7 +210,6 @@ def key_ssl(request):
         print(key_full)
         if key_full == key_client_full:
             print('Session key is correct')
-
             request_data = {'header': msg_title, 'body': msg_text, 'user_uuid': "b545d618-ff44-4319-9c88-2100d9928f32"}
             data = json.dumps(request_data, indent=2).encode('utf-8')
             #        response = requests.post('http://0.0.0.0:10003/api/notes', data)
@@ -234,26 +220,6 @@ def key_ssl(request):
         else:
             print('Session key dont set')
             return redirect('home')
-
-
-
-@csrf_exempt
-def finish_dh(request):
-    """Get B and compute K"""
-    B = request.POST['B']
-    ciphertext = request.POST['password']
-    session_key = request.POST['session_key']
-    private_key = cache.get(session_key)
-    K = pow(B, private_key, settings.P)
-    print(f"password = {ciphertext}\nsession_key = {session_key}\nprivate_key = {private_key}\nB = {B}\nK = {K}")
-    response = TemplateView(
-        request,
-        'finished.html',
-        {   'K': K,
-            'ciphertext': ciphertext,
-        }
-    )
-    return JsonResponse(response)
 
 @csrf_exempt
 def create(request):
@@ -272,8 +238,7 @@ def create(request):
 #            form.save()
             form.save2()
             # form.getnote("b545d618-ff44-4319-9c88-2100d9928f32")
-            # string = form.title + ';' + form.text
-            # return redirect('home')
+            return redirect('home')
         else:
             error = 'Форма была не верной'
 
@@ -297,11 +262,11 @@ def edit(request, id):
 #        if "uuidheaderbodyuser_uuid" in keys_merge:
         note = {}
         for key in response_dict:
-            if "uuid" in key:
+            if "uuid" == key:
                 note["uuid"] = response_dict[key]
-            if "header" in key:
+            if "header" == key:
                 note["title"] = response_dict[key]
-            if "body" in key:
+            if "body" == key:
                 note["text"] = response_dict[key]
         if request.method == 'POST':
             title = request.POST['title']
@@ -310,7 +275,7 @@ def edit(request, id):
             request_data = {'header': title, 'body': text}
             data = json.dumps(request_data, indent=2).encode('utf-8')
 #            response = requests.patch(f'http://0.0.0.0:10003/api/{id}', data)
-            response = requests.patch(f'http://84.38.180.103:10003/api/{id}', data)
+            response = requests.patch(f'http://84.38.180.103:10003/api/notes/{id}', data)
             return redirect('home')
         else:
             return render(request, "main/edit.html", {"note": note})
@@ -322,7 +287,7 @@ def delete(request, id):
 #        note = Note.objects.get(id=id)
 #        note.delete()
 #        response = requests.delete(f'http://0.0.0.0:10003/api/{id}')
-        response = requests.delete(f'http://84.38.180.103:10003/api/{id}')
+        response = requests.delete(f'http://84.38.180.103:10003/api/notes/{id}')
         return redirect('home')
     except Note.DoesNotExist:
         return redirect('home')

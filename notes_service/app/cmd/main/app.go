@@ -24,7 +24,6 @@ import (
 func main() {
 	logging.Init()
 	logger := logging.GetLogger()
-
 	logger.Println("logger initialized")
 
 	logger.Println("config initializing")
@@ -41,7 +40,6 @@ func main() {
 	if err != nil {
 		logger.Fatal(err)
 	}
-
 	noteStorage := db.NewStorage(mongoClient, cfg.MongoDB.Collection, logger)
 	if err != nil {
 		panic(err)

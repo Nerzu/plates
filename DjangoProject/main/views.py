@@ -1,5 +1,6 @@
 import json
 import pyotp
+import random
 from django.contrib import auth
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
@@ -13,6 +14,9 @@ from .forms import NoteForm, UserLoginForm, TwoFactorForm
 from .forms import UserSignUpForm
 from .models import Note, User
 
+from django.conf import settings
+from django.core.cache import cache
+from django.views.generic.base import TemplateView
 
 def check_pin_google(pin, secret_key):
     totp = pyotp.TOTP(secret_key)
@@ -148,31 +152,45 @@ def logout(request):
 
 @csrf_exempt
 def key_ssl(request):
+    session_key = random.getrandbits(256)
+    private_key = random.getrandbits(256)
+    cache.set(session_key, private_key)
+    A = pow(settings.G, private_key, settings.P)
 
+    print(f"session_key = {session_key}\nprivate_key = {private_key}\nA = {A}")
 
-    # key_client = json.loads(request.body)
-    #
-    # print(key_client)
-    print(request.method)
     if request.method == 'GET':
-        print(request.GET['client_partial'])
-        print('123213')
-        response = {
-            'is_key': 123456789
-        }
+        response = {'p': str(settings.P),
+             'g': settings.G,
+             'A': A,
+             'session_key': str(session_key)
+             }
         return JsonResponse(response)
-
-    if request.method == 'GET':
-        key = {'key': '1111111111111'}
-
-        json_data = json.dumps(key)
-
-
-        return json_data
 
     elif request.method == 'POST':
         json_body = json.loads(request.body)
         print(json_body)
+
+
+
+
+@csrf_exempt
+def finish_dh(request):
+    """Get B and compute K"""
+    B = request.POST['B']
+    ciphertext = request.POST['password']
+    session_key = request.POST['session_key']
+    private_key = cache.get(session_key)
+    K = pow(B, private_key, settings.P)
+    print(f"password = {ciphertext}\nsession_key = {session_key}\nprivate_key = {private_key}\nB = {B}\nK = {K}")
+    response = TemplateView(
+        request,
+        'finished.html',
+        {   'K': K,
+            'ciphertext': ciphertext,
+        }
+    )
+    return JsonResponse(response)
 
 @csrf_exempt
 def create(request):

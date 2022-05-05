@@ -1,3 +1,12 @@
+function bigPowMod(a, b, c) {
+        a = str2bigInt(a, base);
+        b = str2bigInt(b, base);
+        c = str2bigInt(c, base);
+        var result = powMod(a, b, c);
+        result = bigInt2str(result, base);
+        return result;
+      }
+
 const generateKey = async () =>
     window.crypto.subtle.generateKey({
         name: 'AES-GCM',
@@ -69,40 +78,43 @@ let key
 const encryptAndSendMsg = async () => {
     const msg = input.value
 
-     // шифрование
+    // шифрование
     key = await generateKey()
 
-    const {
-        cipher,
-        iv
-    } = await encrypt(msg, key)
-    console.log(msg)
-    console.log(cipher)
-    decrypt_msg = decrypt(cipher, key, iv)
-    console.log(decrypt_msg)
-    // return cipher
-    // упаковка и отправка
-
     url = 'http://127.0.0.1:8000/key_ssl'
-    url+= '?client_partial=11111111111111' //+ pack(key)
+    // url+= '?client_partial=11111111111111' //+ pack(key)
     console.log(url)
 
-    let response = await fetch(url, {
-
-    });
+    let response = await fetch(url);
 
 
     let text = await response.text(); // прочитать тело ответа как текст
 
     console.log(text)
+    let response_json = JSON.parse(text)
 
-    // await fetch('http://127.0.0.1:8000/create', {
-    //     method: 'POST',
-    //     body: JSON.stringify({
-    //         text: pack(cipher),
-    //         title: pack(iv)
-    //     })
-    // })
+    var key_s = response_json['session_key']
+    var key_p = response_json['p']
+    console.log(key_s)
+    console.log(key_p)
+    console.log(response_json['p'])
+
+    const {
+        cipher,
+        iv
+    } = await encrypt(msg, key_s)
+    console.log(msg)
+    console.log(cipher)
+    decrypt_msg = decrypt(cipher, key, iv)
+    console.log(decrypt_msg)
+
+    await fetch('http://127.0.0.1:8000/create', {
+        method: 'POST',
+        body: JSON.stringify({
+            text: pack(cipher),
+            title: pack(iv)
+        })
+    })
     //
     // output.innerHTML = `Сообщение <span>"${msg}"</span> зашифровано.<br>Данные отправлены на сервер.`
 }

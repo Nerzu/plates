@@ -12,7 +12,7 @@
             <td>id:{{ element.id }}</td>
             <h3>{{ element.title }}</h3>
             <p>{{ element.text }}</p>
-        <td><a href="edit/{{element.id}}">Изменить</a> | <a href="delete/{{element.id}}">Удалить</a></td>
+        <td><a href="edit/{{element.uuid}}">Изменить</a> | <a href="delete/{{element.uuid}}">Удалить</a></td>
         </div>
     {% endfor %}
     {% else %}

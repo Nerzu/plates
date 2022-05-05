@@ -152,25 +152,42 @@ def logout(request):
 
 @csrf_exempt
 def key_ssl(request):
-    session_key = random.getrandbits(256)
-    private_key = random.getrandbits(256)
-    cache.set(session_key, private_key)
-    A = pow(settings.G, private_key, settings.P)
 
-    print(f"session_key = {session_key}\nprivate_key = {private_key}\nA = {A}")
 
     if request.method == 'GET':
+        session_key = random.getrandbits(256)
+        private_key = random.getrandbits(256)
+        cache.set('key_cache', private_key)
+        A = pow(settings.G, private_key, settings.P)
+
+        print(f"session_key = {session_key}\nprivate_key = {private_key}\nA = {A}")
+        print(f"settings.P = {settings.P}")
+        print(f"len pricate_key={len(str(private_key))}")
         response = {'p': str(settings.P),
-             'g': settings.G,
-             'A': A,
-             'session_key': str(session_key)
-             }
+            'g': str(settings.G),
+            'A': str(A),
+            'session_key': str(session_key),
+            }
         return JsonResponse(response)
 
     elif request.method == 'POST':
         json_body = json.loads(request.body)
-        print(json_body)
 
+        key_client_partitial = int(json_body['key_client'])
+        key_client_full = int(json_body['key_full'])
+
+        private_key_cache = cache.get('key_cache')
+
+        print(f"key_client: {type(key_client_partitial)}\nkey_part_client:{key_client_partitial}")
+        key_full = pow(key_client_partitial, private_key_cache, settings.P)
+        print(key_full)
+        if key_full == key_client_full:
+            print('Session key is correct')
+            return redirect('home')
+
+        else:
+            print('Session key dont set')
+            return redirect('home')
 
 
 

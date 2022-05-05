@@ -26,14 +26,29 @@ type Service interface {
 	Create(ctx context.Context, dto CreateNoteDTO) (string, error)
 	GetOne(ctx context.Context, uuid string) (Note, error)
 	GetByUserUUID(ctx context.Context, uuid string) ([]Note, error)
+	GetHeadersByUserUUID(ctx context.Context, uuid string) ([]Note, error)
 	Update(ctx context.Context, dto UpdateNoteDTO) error
 	Delete(ctx context.Context, uuid string) error
 }
 
+func (s service) GetHeadersByUserUUID(ctx context.Context, uuid string) (notes []Note, err error) {
+	notes, err = s.storage.FindHeadersByUserUUID(ctx, uuid)
+
+	if err != nil {
+		if errors.Is(err, apperror.ErrNotFound) {
+			return notes, err
+		}
+		return notes, fmt.Errorf("failed to get notes by ids. error: %w", err)
+	}
+	if len(notes) == 0 {
+		return notes, apperror.ErrNotFound
+	}
+	fmt.Println("notesService: ", notes)
+	return notes, nil
+}
+
 func (s service) Create(ctx context.Context, dto CreateNoteDTO) (noteUUID string, err error) {
 	note := NewNote(dto)
-	/*fmt.Println("new dto: ", dto)
-	fmt.Println("new note: ", note)*/
 	noteUUID, err = s.storage.Create(ctx, note)
 
 	if err != nil {
@@ -74,7 +89,7 @@ func (s service) GetByUserUUID(ctx context.Context, uuid string) (notes []Note, 
 }
 
 func (s service) Update(ctx context.Context, dto UpdateNoteDTO) error {
-	if dto.Body == "" && dto.UserUUID == "" {
+	if dto.Body == "" && dto.Header == "" && dto.UserUUID == "" {
 		return apperror.BadRequestError("nothing to update")
 	}
 	note := UpdatedNote(dto)

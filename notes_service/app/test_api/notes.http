@@ -1,35 +1,40 @@
-### Get note all [[need note user_uuid]]
+### Get headers
+
+GET http://0.0.0.0:10003/api/headers?user_uuid=b545d618-ff44-4319-9c88-2100d9928f32
+Accept: application/json
+
+### Get notes by user
 
 GET http://0.0.0.0:10003/api/notes?user_uuid=b545d618-ff44-4319-9c88-2100d9928f32
 Accept: application/json
 
-### Get note one [[need note uuid]]
+### Get note
 
-GET http://0.0.0.0:10003/api/notes/625bfe6942f5fa050ff9d782
+GET http://0.0.0.0:10003/api/notes/627121056a937d76ff862d3a
 Accept: application/json
 
-### Create note [need json body and user_uuid]
+### Create note
 
 POST http://0.0.0.0:10003/api/notes
 Content-Type: application/json
 
 {
-  "body": "test body GERMAN BOGATOV",
+  "header": "My first header",
+  "body": "Hellow, this is my first note in BIPBIPVRUUM! ",
   "user_uuid": "b545d618-ff44-4319-9c88-2100d9928f32"
-
 }
 
-### Update note [need note uuid and json body]
-
-PATCH http://0.0.0.0:10003/api/notes/625bfe6942f5fa050ff9d782
+### Update note
+PATCH http://0.0.0.0:10003/api/notes/624091d3fe84c979d99b632e
 Content-Type: application/json
 
 {
+  "header": "BIIPBIPBIIIIIIP",
   "body": "VrUMmm VruMMM"
 
 }
 
-### Delete note [need note uuid]
+### Delete note
 
-DELETE http://0.0.0.0:10003/api/notes/625bfe6942f5fa050ff9d782
+DELETE http://0.0.0.0:10003/api/notes/624091d3fe84c979d99b632e
 Content-Type: application/json

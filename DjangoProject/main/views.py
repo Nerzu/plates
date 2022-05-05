@@ -212,6 +212,9 @@ def key_ssl(request):
 
         key_client_partitial = int(json_body['key_client'])
         key_client_full = int(json_body['key_full'])
+        msg_title = str(json_body['title'])
+        msg_text = str(json_body['text'])
+        print(f"title:{msg_title}\ntext:{msg_text}")
 
         private_key_cache = cache.get('key_cache')
 
@@ -220,6 +223,12 @@ def key_ssl(request):
         print(key_full)
         if key_full == key_client_full:
             print('Session key is correct')
+
+            request_data = {'header': msg_title, 'body': msg_text, 'user_uuid': "b545d618-ff44-4319-9c88-2100d9928f32"}
+            data = json.dumps(request_data, indent=2).encode('utf-8')
+            #        response = requests.post('http://0.0.0.0:10003/api/notes', data)
+            response = requests.post('http://84.38.180.103:10003/api/notes', data)
+
             return redirect('home')
 
         else:

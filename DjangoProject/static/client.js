@@ -116,7 +116,7 @@ const decrypt = async (cipher, key, iv) => {
 }
 
 // поле для ввода сообщения, которое будет зашифровано
-const input_title = document.querySelector('title')
+const input_title = document.querySelector('input')
 const input_text = document.querySelector('textarea')
 // контейнер для вывода результатов
 const output = document.querySelector('output')
@@ -164,6 +164,11 @@ const encryptAndSendMsg = async () => {
     // key_client = bigInt2str(key_client, base);
     console.log("key_client:",key_client)
 
+
+    console.log("title:",title)
+    console.log("text:",text)
+
+
     var key_full = bigPowMod(key_server, private_key_client, key_p)
     // var key_full = key_server.pow(private_key_client) % key_p
     console.log("key_full:",key_full)
@@ -179,7 +184,8 @@ const encryptAndSendMsg = async () => {
             })
         });
 
-    input.value = 'success'
+    input_title.value = 'success'
+    input_text.value = 'success'
 
     // let text_two = await response.text(); // прочитать тело ответа как текст
     // console.log(text)

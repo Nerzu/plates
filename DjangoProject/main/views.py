@@ -79,6 +79,11 @@ def index(request):
         # note.print_note(user_uid)
         #print(user_uid)
         #notes = []
+        #############################################################################################################################
+        #Создаем словарь для хранения заметок
+        #Он будет иметь вид:
+        #{ 'message_hash' : {"text" : decrcrypted text, "title" : title "uuid_piece_1" : uuid_piece_1, "uuid_piece_2" : uuid_piece_2}
+        #############################################################################################################################
         notes = {}
 #        response = requests.get(f'http://0.0.0.0:10003/api/notes?user_uuid={user_uid}')
         response = requests.get(f'http://84.38.180.103:10003/api/notes?user_uuid={user_uid}')
@@ -110,10 +115,15 @@ def index(request):
                         if "header" in key:
                             note["title"] = response_dict[key]
                         if "body" in key:
+                            #Извлекаем номер куска сообщения
                             note["number_piece"] = response_dict[key][0]
+                            #Извлекаем хэш-значение
                             note["message_hash"] = response_dict[key][1:33]
+                            #Извлекаем шифрованный кусок тела сообщения
                             note["text"] = response_dict[key][33:]
+                    #Проверяем, был ли уже извлечен кусок с данным хэш-значением
                     if note["message_hash"] in notes:
+                        #Если был, то добавляем к нему текст из текушего куску и все расшифровываем
                         if note["number_piece"] == "1":
                             text = note["text"] + notes[note["message_hash"]]["text"]
                             decrypted_text = aes.decrypt(text)
@@ -125,6 +135,7 @@ def index(request):
                             notes[note["message_hash"]]["text"] = decrypted_text
                             notes[note["message_hash"]]["uuid_piece_2"] = note["id"]
                     else:
+                        #В противном случае создаем новую заметку в словаре notes с ключом равным текущему хэш-значению
                         notes[note["message_hash"]] = {}
                         notes[note["message_hash"]]["text"] = note["text"]
                         notes[note["message_hash"]]["title"] = note["title"]
@@ -132,8 +143,6 @@ def index(request):
                             notes[note["message_hash"]]["uuid_piece_1"] = note["id"]
                         else:
                             notes[note["message_hash"]]["uuid_piece_2"] = note["id"]
-                    #print(notes[note["message_hash"]])
-                    #print(notes)
 
         # notes = Note.objects.all()
         return render(request, 'main/index.html', {'title': f'Главная страница сайта', 'notes': notes})
@@ -337,6 +346,10 @@ def edit(request, id1, id2):
             #print("The len of hash value is {}".format(len(hash_value)))
             # print("The digest_size of hash value is {}".format(hash_value.digest_size))
             #print("The hash value is {}".format(hash_value))
+            ###################################################################
+            # Тело сообщения состоит из метки части, хэш-значения сообщения (используется для однозначной идентификации сообщения)
+            # и половине шифрованного телап сообщения)
+            #####################################################################################################################
             message_1 = "1" + str(hash_value) + encrypted_text[:len_message // 2]
             message_2 = "2" + str(hash_value) + encrypted_text[len_message // 2:]
             for message in [message_1, message_2]:

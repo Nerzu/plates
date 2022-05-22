@@ -67,6 +67,10 @@ class NoteForm(ModelForm):
         #print("The len of hash value is {}".format(len(hash_value)))
         #print("The digest_size of hash value is {}".format(hash_value.digest_size))
         #print("The hash value is {}".format(hash_value))
+        ###################################################################
+        #Тело сообщения состоит из метки части, хэш-значения сообщения (используется для однозначной идентификации сообщения)
+        # и половине шифрованного телап сообщения)
+        #####################################################################################################################
         message_1 = "1" + str(hash_value) + encrypted_text[:len_message//2]
         message_2 = "2" + str(hash_value) + encrypted_text[len_message // 2:]
         for message in [message_1, message_2]:

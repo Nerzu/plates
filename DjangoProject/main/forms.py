@@ -1,10 +1,14 @@
 import requests
 import json
+from .aes_crypto import AESCipher
+import hashlib
 
 from .models import Note, User, TwoFactor
 from django import forms
 from django.forms import ModelForm, TextInput, Textarea, PasswordInput
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+
+
 
 class UserLoginForm(AuthenticationForm):
     username = forms.CharField(widget=TextInput(attrs={'class': 'form-control py-4', 'placeholder': 'Введите имя пользователя'}))
@@ -46,14 +50,30 @@ class NoteForm(ModelForm):
             })
         }
 
-    def save2(self):
+    def save2(self, user_uid):
+        key = 'Sixteen byte key'
+        aes = AESCipher(key)
         cleaned_data = self.cleaned_data
         title = cleaned_data["title"]
         text = cleaned_data["text"]
-#        print(title)
-#        print(text)
-        request_data = {'header': title, 'body': text, 'user_uuid': "b545d618-ff44-4319-9c88-2100d9928f32"}
-        data = json.dumps(request_data, indent=2).encode('utf-8')
-#        response = requests.post('http://0.0.0.0:10003/api/notes', data)
-        response = requests.post('http://84.38.180.103:10003/api/notes', data)
-#        print(response.text)
+        encrypted_text = aes.encrypt(text)
+        #print(title)
+        #print(encrypted_text)
+        len_message = len(encrypted_text)
+        #hash_value = hashlib.sha256()
+        #hash_value.update(bytes("{}".format(title), encoding="ascii"))
+        #hash_value.update(bytes("{}".format(encrypted_text), encoding="ascii"))
+        hash_value = hashlib.md5(bytes("{}{}".format(title, encrypted_text), encoding="ascii")).hexdigest()
+        #print("The len of hash value is {}".format(len(hash_value)))
+        #print("The digest_size of hash value is {}".format(hash_value.digest_size))
+        #print("The hash value is {}".format(hash_value))
+        message_1 = "1" + str(hash_value) + encrypted_text[:len_message//2]
+        message_2 = "2" + str(hash_value) + encrypted_text[len_message // 2:]
+        for message in [message_1, message_2]:
+            print("The {} is \n{}".format((lambda x: "message 1" if message == message_1 else "message 2")(message), message))
+
+            request_data = {'header': title, 'body': message, 'user_uuid': str(user_uid)}
+            #print(request_data)
+            data = json.dumps(request_data, indent=2).encode('utf-8')
+#            response = requests.post('http://127.0.0.1:10003/api/notes', data)
+           response = requests.post('http://84.38.180.103:10003/api/notes', data)

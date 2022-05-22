@@ -59,6 +59,12 @@ func (h *Handler) GetNotesByUser(w http.ResponseWriter, r *http.Request) error {
 
 	h.Logger.Debug("get user_uuid from URL")
 	userUUID := r.URL.Query().Get("user_uuid")
+	fmt.Printf(userUUID)
+	//////////////////////////////////////////////////////////////////
+	r.ParseForm()                     // Parses the request body
+	x := r.Form.Get("parameter_name") // x will be "" if parameter is not set
+	fmt.Println(x)
+	/////////////////////////////////////////////////////////////////////
 	if userUUID == "" {
 		return apperror.BadRequestError("user_uuid query parameter is required and must be a comma separated integers")
 	}
@@ -101,6 +107,7 @@ func (h *Handler) CreateNote(w http.ResponseWriter, r *http.Request) error {
 	//dto.Body = hex.EncodeToString(hash[:])
 	//fmt.Println("dto: ", dto)
 	noteUUID, err := h.NoteService.Create(r.Context(), dto)
+	r.ParseForm() // Parses the request body
 	if err != nil {
 		return err
 	}

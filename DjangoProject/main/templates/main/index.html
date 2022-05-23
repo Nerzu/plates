@@ -7,12 +7,12 @@
 {% block content %}
     <h1>Главная страница</h1>
     {% if notes %}
-    {% for element in notes %}
+    {% for key, element in notes.items %}
         <div class="alert alert-warning mt-2">
-            <td>id:{{ element.id }}</td>
+            <td>id:{{ element.message_hash }}</td>
             <h3>{{ element.title }}</h3>
             <p>{{ element.text }}</p>
-        <td><a href="edit/{{element.id}}">Изменить</a> | <a href="delete/{{element.id}}">Удалить</a></td>
+            <td><a href="edit/{{element.uuid_piece_1}}/{{element.uuid_piece_2}}">Изменить</a></td> | <td><a href="delete/{{element.uuid_piece_1}}/{{element.uuid_piece_2}}">Удалить</a></td>
         </div>
     {% endfor %}
     {% else %}

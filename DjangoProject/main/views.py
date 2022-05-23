@@ -20,6 +20,10 @@ from django.conf import settings
 from django.core.cache import cache
 from django.views.generic.base import TemplateView
 
+from .aes_crypto import AESCipher
+import hashlib
+
+
 def check_pin_google(pin, secret_key):
     totp = pyotp.TOTP(secret_key)
     verification_status = totp.verify(pin)
@@ -66,23 +70,35 @@ class DH_Endpoint():
 
 
 
+
 @login_required(login_url='login_my')
 def index(request):
     if request.method == 'GET':
         user_uid = request.user.id
         # note = Note()
         # note.print_note(user_uid)
-        notes = []
+        #print(user_uid)
+        #notes = []
+        #############################################################################################################################
+        #Создаем словарь для хранения заметок
+        #Он будет иметь вид:
+        #{ 'message_hash' : {"text" : decrcrypted text, "title" : title "uuid_piece_1" : uuid_piece_1, "uuid_piece_2" : uuid_piece_2}
+        #############################################################################################################################
+        notes = {}
 #        response = requests.get(f'http://0.0.0.0:10003/api/notes?user_uuid={user_uid}')
         response = requests.get(f'http://84.38.180.103:10003/api/notes?user_uuid={user_uid}')
-#        response = requests.get('http://127.0.0.1:53210')
+#        response = requests.get(f'http://127.0.0.1:10003/api/notes?user_uuid={user_uid}')
         if response:
-
             result = re.findall('{[^{}]*}', response.text)
             for i in range(0, len(result)):
                 response_dict = json.loads(result[i])
+                ###################################################################
+                #print(response_dict["body"][1:33])
+                ###################################################################
                 keys_merge = "".join(response_dict)
-                print(keys_merge)
+                #print(keys_merge)
+                aes_key = 'Sixteen byte key'
+                aes = AESCipher(aes_key)
                 if "uuidheaderbodyuser_uuid" in keys_merge:
                     note = {}
                     for key in response_dict:
@@ -90,9 +106,35 @@ def index(request):
                             note["id"] = response_dict[key]
                         if "header" == key:
                             note["title"] = response_dict[key]
-                        if "body" == key:
-                            note["text"] = response_dict[key]
-                notes.append(note)
+                        if "body" in key:
+                            #Извлекаем номер куска сообщения
+                            note["number_piece"] = response_dict[key][0]
+                            #Извлекаем хэш-значение
+                            note["message_hash"] = response_dict[key][1:33]
+                            #Извлекаем шифрованный кусок тела сообщения
+                            note["text"] = response_dict[key][33:]
+                    #Проверяем, был ли уже извлечен кусок с данным хэш-значением
+                    if note["message_hash"] in notes:
+                        #Если был, то добавляем к нему текст из текушего куску и все расшифровываем
+                        if note["number_piece"] == "1":
+                            text = note["text"] + notes[note["message_hash"]]["text"]
+                            decrypted_text = aes.decrypt(text)
+                            notes[note["message_hash"]]["text"] = decrypted_text
+                            notes[note["message_hash"]]["uuid_piece_1"] = note["id"]
+                        else:
+                            text = notes[note["message_hash"]]["text"] + note["text"]
+                            decrypted_text = aes.decrypt(text)
+                            notes[note["message_hash"]]["text"] = decrypted_text
+                            notes[note["message_hash"]]["uuid_piece_2"] = note["id"]
+                    else:
+                        #В противном случае создаем новую заметку в словаре notes с ключом равным текущему хэш-значению
+                        notes[note["message_hash"]] = {}
+                        notes[note["message_hash"]]["text"] = note["text"]
+                        notes[note["message_hash"]]["title"] = note["title"]
+                        if note["number_piece"] == "1":
+                            notes[note["message_hash"]]["uuid_piece_1"] = note["id"]
+                        else:
+                            notes[note["message_hash"]]["uuid_piece_2"] = note["id"]
         # notes = Note.objects.all()
         return render(request, 'main/index.html', {'title': f'Главная страница сайта', 'notes': notes})
     elif request.method == 'POST':
@@ -226,17 +268,19 @@ def create(request):
 #    print(request)
     error = ''
     if request.method == 'POST': #здесь отправляем на сервак заметку
-
+        user_uid = request.user.id
+        #user_uid = "b545d618-ff44-4319-9c88-2100d9928f32"
+        print("User uid is:")
+        print(user_uid)
         # json_body = json.loads(request.body)
         # print(str(json_body))
         form = NoteForm(request.POST)
         # form.title=json_body["iv"]
-        # form.text=json_body["cipher"]
         # form.save()
 
         if form.is_valid():
 #            form.save()
-            form.save2()
+            form.save2(user_uid)
             # form.getnote("b545d618-ff44-4319-9c88-2100d9928f32")
             return redirect('home')
         else:
@@ -249,45 +293,84 @@ def create(request):
     }
     return render(request, 'main/create.html', context)
 
-def edit(request, id):
+def edit(request, id1, id2):
     try:
-        #note = Note.objects.get(id=id)
-#        response = requests.get(f'http://0.0.0.0:10003/api/notes/{id}')
-        response = requests.get(f'http://84.38.180.103:10003/api/notes/{id}')
-#        response = requests.get('http://127.0.0.1:53211')
-        #note_dict = response.json()
-        result = re.findall('{[^{}]*}', response.text)
-        response_dict = json.loads(result[0])
-        keys_merge = "".join(response_dict)
-#        if "uuidheaderbodyuser_uuid" in keys_merge:
+#        response_piece_1 = requests.get(f'http://127.0.0.1:10003/api/notes/{id1}')
+        response_piece_1 = requests.get(f'http://84.38.180.103:10003/api/notes/{id1}')
+#        response_piece_2 = requests.get(f'http://127.0.0.1:10003/api/notes/{id2}')
+        response_piece_2 = requests.get(f'http://84.38.180.103:10003/api/notes/{id2}')
         note = {}
-        for key in response_dict:
-            if "uuid" == key:
-                note["uuid"] = response_dict[key]
-            if "header" == key:
-                note["title"] = response_dict[key]
-            if "body" == key:
-                note["text"] = response_dict[key]
+        for response in [response_piece_1, response_piece_2]:
+            result = re.findall('{[^{}]*}', response.text)
+            response_dict = json.loads(result[0])
+#            keys_merge = "".join(response_dict)
+#           if "uuidheaderbodyuser_uuid" in keys_merge:
+            if response == response_piece_1:
+                text = ""
+                for key in response_dict:
+                    if "uuid" == key:
+                        note["uuid_piece_1"] = response_dict[key]
+                    if "header" in key:
+                        note["title"] = response_dict[key]
+                    if "body" in key:
+                        note["message_hash"] = response_dict[key][1:33]
+                        text = response_dict[key][33:] + text
+
+            else:
+                for key in response_dict:
+                    if "uuid" == key:
+                        note["uuid_piece_2"] = response_dict[key]
+                    if "body" in key:
+                        text = text + response_dict[key][33:]
+
+        aes_key = 'Sixteen byte key'
+        aes = AESCipher(aes_key)
+        note["text"] = aes.decrypt(text)
         if request.method == 'POST':
             title = request.POST['title']
             text = request.POST['text']
-#            note.save()
-            request_data = {'header': title, 'body': text}
-            data = json.dumps(request_data, indent=2).encode('utf-8')
-#            response = requests.patch(f'http://0.0.0.0:10003/api/{id}', data)
-            response = requests.patch(f'http://84.38.180.103:10003/api/notes/{id}', data)
+            aes_key = 'Sixteen byte key'
+            aes = AESCipher(aes_key)
+            encrypted_text = aes.encrypt(text)
+            len_message = len(encrypted_text)
+            # hash_value = hashlib.sha256()
+            # hash_value.update(bytes("{}".format(title), encoding="ascii"))
+            # hash_value.update(bytes("{}".format(encrypted_text), encoding="ascii"))
+            hash_value = hashlib.md5(bytes("{}{}".format(title, encrypted_text), encoding="ascii")).hexdigest()
+            #print("The len of hash value is {}".format(len(hash_value)))
+            # print("The digest_size of hash value is {}".format(hash_value.digest_size))
+            #print("The hash value is {}".format(hash_value))
+            ###################################################################
+            # Тело сообщения состоит из метки части, хэш-значения сообщения (используется для однозначной идентификации сообщения)
+            # и половине шифрованного телап сообщения)
+            #####################################################################################################################
+            message_1 = "1" + str(hash_value) + encrypted_text[:len_message // 2]
+            message_2 = "2" + str(hash_value) + encrypted_text[len_message // 2:]
+            for message in [message_1, message_2]:
+#                print("The {} is \n{}".format((lambda x: "message 1" if message == message_1 else "message 2")(message),message))
+
+                request_data = {'header': title, 'body': message}
+                data = json.dumps(request_data, indent=2).encode('utf-8')
+                if message == message_1:
+#                    response = requests.patch(f'http://127.0.0.1:10003/api/notes/{id1}', data)
+                    response = requests.patch(f'http://84.38.180.103:10003/api/notes/{id1}', data)
+                else:
+#                    response = requests.patch(f'http://127.0.0.1:10003/api/notes/{id2}', data)
+                    response = requests.patch(f'http://84.38.180.103:10003/api/notes/{id2}', data)
             return redirect('home')
         else:
             return render(request, "main/edit.html", {"note": note})
     except Note.DoesNotExist:
         return redirect('home')
 
-def delete(request, id):
+def delete(request, id1, id2):
     try:
+        print("We are here")
 #        note = Note.objects.get(id=id)
 #        note.delete()
-#        response = requests.delete(f'http://0.0.0.0:10003/api/{id}')
-        response = requests.delete(f'http://84.38.180.103:10003/api/notes/{id}')
+        for id in [id1, id2]:
+#            response = requests.delete(f'http://127.0.0.1:10003/api/notes/{id}')
+            response = requests.delete(f'http://84.38.180.103:10003/api/notes/{id}')
         return redirect('home')
     except Note.DoesNotExist:
         return redirect('home')

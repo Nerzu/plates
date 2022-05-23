@@ -89,14 +89,6 @@ def index(request):
         response = requests.get(f'http://84.38.180.103:10003/api/notes?user_uuid={user_uid}')
 #        response = requests.get(f'http://127.0.0.1:10003/api/notes?user_uuid={user_uid}')
         if response:
-            #            for item in re.findall('{[^{}]*}', response.text):
-            #                note_dict = json.loads(json.dumps(item))
-            #                note = Note()
-            #                note.title = note_dict["header"]
-            #                note.text = note_dict["body"]
-            #                print(note_dict)
-            #                notes.append(note)
-            #print(response.text)
             result = re.findall('{[^{}]*}', response.text)
             for i in range(0, len(result)):
                 response_dict = json.loads(result[i])
@@ -112,7 +104,7 @@ def index(request):
                     for key in response_dict:
                         if "uuid" == key:
                             note["id"] = response_dict[key]
-                        if "header" in key:
+                        if "header" == key:
                             note["title"] = response_dict[key]
                         if "body" in key:
                             #Извлекаем номер куска сообщения
@@ -143,7 +135,6 @@ def index(request):
                             notes[note["message_hash"]]["uuid_piece_1"] = note["id"]
                         else:
                             notes[note["message_hash"]]["uuid_piece_2"] = note["id"]
-
         # notes = Note.objects.all()
         return render(request, 'main/index.html', {'title': f'Главная страница сайта', 'notes': notes})
     elif request.method == 'POST':
@@ -228,45 +219,49 @@ def logout(request):
 
 @csrf_exempt
 def key_ssl(request):
-    session_key = random.getrandbits(256)
-    private_key = random.getrandbits(256)
-    cache.set(session_key, private_key)
-    A = pow(settings.G, private_key, settings.P)
-
-    print(f"session_key = {session_key}\nprivate_key = {private_key}\nA = {A}")
 
     if request.method == 'GET':
+        session_key = random.getrandbits(256)
+        private_key = random.getrandbits(256)
+        cache.set('key_cache', private_key)
+        A = pow(settings.G, private_key, settings.P)
+
+        print(f"session_key = {session_key}\nprivate_key = {private_key}\nA = {A}")
+        print(f"settings.P = {settings.P}")
+        print(f"len pricate_key={len(str(private_key))}")
         response = {'p': str(settings.P),
-             'g': settings.G,
-             'A': A,
-             'session_key': str(session_key)
-             }
+            'g': str(settings.G),
+            'A': str(A),
+            'session_key': str(session_key),
+            }
         return JsonResponse(response)
 
     elif request.method == 'POST':
         json_body = json.loads(request.body)
-        print(json_body)
 
+        key_client_partitial = int(json_body['key_client'])
+        key_client_full = int(json_body['key_full'])
+        msg_title = str(json_body['title'])
+        msg_text = str(json_body['text'])
+        print(f"title:{msg_title}\ntext:{msg_text}")
 
+        private_key_cache = cache.get('key_cache')
 
+        print(f"key_client: {type(key_client_partitial)}\nkey_part_client:{key_client_partitial}")
+        key_full = pow(key_client_partitial, private_key_cache, settings.P)
+        print(key_full)
+        if key_full == key_client_full:
+            print('Session key is correct')
+            request_data = {'header': msg_title, 'body': msg_text, 'user_uuid': "b545d618-ff44-4319-9c88-2100d9928f32"}
+            data = json.dumps(request_data, indent=2).encode('utf-8')
+            #        response = requests.post('http://0.0.0.0:10003/api/notes', data)
+            response = requests.post('http://84.38.180.103:10003/api/notes', data)
 
-@csrf_exempt
-def finish_dh(request):
-    """Get B and compute K"""
-    B = request.POST['B']
-    ciphertext = request.POST['password']
-    session_key = request.POST['session_key']
-    private_key = cache.get(session_key)
-    K = pow(B, private_key, settings.P)
-    print(f"password = {ciphertext}\nsession_key = {session_key}\nprivate_key = {private_key}\nB = {B}\nK = {K}")
-    response = TemplateView(
-        request,
-        'finished.html',
-        {   'K': K,
-            'ciphertext': ciphertext,
-        }
-    )
-    return JsonResponse(response)
+            return redirect('home')
+
+        else:
+            print('Session key dont set')
+            return redirect('home')
 
 @csrf_exempt
 def create(request):
@@ -287,8 +282,7 @@ def create(request):
 #            form.save()
             form.save2(user_uid)
             # form.getnote("b545d618-ff44-4319-9c88-2100d9928f32")
-            # string = form.title + ';' + form.text
-            # return redirect('home')
+            return redirect('home')
         else:
             error = 'Форма была не верной'
 

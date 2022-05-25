@@ -16,18 +16,18 @@ function rnd256() {
 
 
 function bigPowMod(a, b, c) {
-        console.log("a:",typeof a,a)
-        console.log("b:",typeof b,b)
-        console.log("c:",typeof c,c)
+        // console.log("a:",typeof a,a)
+        // console.log("b:",typeof b,b)
+        // console.log("c:",typeof c,c)
         a = str2bigInt(a, base);
         b = str2bigInt(b, base);
         c = str2bigInt(c, base);
-        console.log("a:",typeof a,a)
-        console.log("b:",typeof b,b)
-        console.log("c:",typeof c,c)
+        // console.log("a:",typeof a,a)
+        // console.log("b:",typeof b,b)
+        // console.log("c:",typeof c,c)
         var result = powMod(a, b, c);
         result = bigInt2str(result, base);
-        console.log("result:",typeof result,result)
+        // console.log("result:",typeof result,result)
         return result;
       }
 
@@ -53,6 +53,13 @@ const encode = data => {
     return encoder.encode(data)
 }
 
+const decode = byteStream => {
+    const decoder = new TextDecoder()
+
+    return decoder.decode(byteStream)
+}
+
+
 const generateIv = () =>
     window.crypto.getRandomValues(new Uint8Array(12))
 
@@ -70,6 +77,26 @@ const encrypt = async (data, key) => {
     }
 }
 
+function encrypt_msg (data, key) {
+    var enc_msg = '';
+    let str_msg = data;
+    var i =0
+
+    // console.log('type key:', typeof key)
+
+    for(i=0; i<str_msg.length; i++){
+        // console.log((str_msg[i].charCodeAt(0))+key)
+        // console.log('type str_msg[i].charCodeAt(0):', typeof str_msg[i].charCodeAt(0))
+
+        enc_msg+=String.fromCharCode((str_msg[i].charCodeAt(0))+key);
+        // enc_msg+=String.fromCharCode((str_msg[i].charCodeAt(0))-key);
+        // console.log(enc_msg);
+    }
+    // console.log("enc_data:", enc_msg.toString())
+    return  enc_msg.toString()
+}
+
+
 const pack = buffer => window.btoa(
     String.fromCharCode.apply(null, new Uint8Array(buffer))
 )
@@ -86,11 +113,7 @@ const unpack = packed => {
     return buffer
 }
 
-const decode = byteStream => {
-    const decoder = new TextDecoder()
 
-    return decoder.decode(byteStream)
-}
 
 const decrypt = async (cipher, key, iv) => {
     const encoded = await window.crypto.subtle.decrypt({
@@ -119,11 +142,11 @@ const encryptAndSendMsg = async () => {
 
     url = 'http://127.0.0.1:8000/key_ssl'
     // url+= '?client_partial=11111111111111' //+ pack(key)
-    console.log(url)
+    // console.log(url)
 
     let response = await fetch(url);
     let text = await response.text(); // прочитать тело ответа как текст
-    console.log(text)
+    // console.log(text)
     let response_json = JSON.parse(text)
 
     // var key_s = parseInt(response_json['session_key'], 10)
@@ -134,25 +157,30 @@ const encryptAndSendMsg = async () => {
     var key_p = response_json['p']
     var key_p_server = response_json['g']
     var key_server = response_json['A']
-    console.log("key_session:", typeof key_s,key_s)
-    console.log("key_public:", typeof key_p, key_p)
-    console.log("key_server:", typeof key_server, key_server)
+    // console.log("key_session:", typeof key_s,key_s)
+    // console.log("key_public:", typeof key_p, key_p)
+    // console.log("key_server:", typeof key_server, key_server)
 
     // var private_key_client = '57864519447101809354481595270012471035729382219440199100252543963896390963236'
     var private_key_client = rnd256()
     // console.log('test_2256:', typeof test_256, test_256)
 
 
-    console.log("private_key_client:", typeof private_key_client, private_key_client)
+    // console.log("private_key_client:", typeof private_key_client, private_key_client)
 
     var key_client = bigPowMod(key_p_server,private_key_client, key_p)
-    console.log("key_client:",key_client)
+    // console.log("key_client:",key_client)
 
-    console.log("title:",title)
-    console.log("text:",msg)
+    // console.log("title:",title)
+    // console.log("text:",msg)
 
     var key_full = bigPowMod(key_server, private_key_client, key_p)
-    console.log("key_full:",key_full)
+    // console.log("key_full:",key_full)
+
+    key_enc = parseInt(key_full, 10)
+
+    enc_msg =encrypt_msg(msg, key_enc)
+    // console.log("enc_msg:", enc_msg)
 
     let response_two = await fetch(url,
         {
@@ -161,7 +189,7 @@ const encryptAndSendMsg = async () => {
             key_client: key_client,
             key_full: key_full,
             title: title,
-            text: msg
+            text: String(enc_msg),
             })
         });
 

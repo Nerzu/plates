@@ -9,12 +9,11 @@
     <form method="POST">
         {% csrf_token %}
         <p>
-            <label>Введите заголовок</label>
             <input type="text" name="title" value="{{ note.title }}" />
         </p>
         <p>
             <label>Введите содержание</label>
-            <input type="text" name="text" value="{{ note.text }}" />
+            <textarea type="text" name="text"/>{{ note.text }}></textarea>
         </p>
 
 {#        {{ form.title }}<br>#}

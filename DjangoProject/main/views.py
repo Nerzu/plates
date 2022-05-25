@@ -3,6 +3,7 @@ import pyotp
 import random
 import requests
 import re
+import cryptocode
 from django.contrib import auth
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
@@ -45,8 +46,9 @@ class DH_Endpoint():
        return partial_key
 
    def generate_full_key(self, partial_key_r):
-       full_key = partial_key_r ** self.private_key
-       full_key = full_key % self.public_key2
+       # full_key = partial_key_r ** self.private_key
+       # full_key = full_key % self.public_key2
+       full_key  = pow(partial_key_r, self.private_key, self.public_key2)
        self.full_key = full_key
        return full_key
 
@@ -54,6 +56,7 @@ class DH_Endpoint():
        encrypted_message = ""
        key = self.full_key
        for c in message:
+           print(f'ord({c}):{ord(c) + key}')
            encrypted_message += chr(ord(c) + key)
        return encrypted_message
 
@@ -61,6 +64,7 @@ class DH_Endpoint():
        decrypted_message = ""
        key = self.full_key
        for c in encrypted_message:
+           print(f'ord({c}):{ord(c) - key}')
            decrypted_message += chr(ord(c) - key)
        return decrypted_message
 
@@ -69,31 +73,31 @@ class DH_Endpoint():
 @login_required(login_url='login_my')
 def index(request):
     if request.method == 'GET':
-        user_uid = request.user.id
-        # note = Note()
-        # note.print_note(user_uid)
-        notes = []
-#        response = requests.get(f'http://0.0.0.0:10003/api/notes?user_uuid={user_uid}')
-        response = requests.get(f'http://84.38.180.103:10003/api/notes?user_uuid={user_uid}')
-#        response = requests.get('http://127.0.0.1:53210')
-        if response:
-
-            result = re.findall('{[^{}]*}', response.text)
-            for i in range(0, len(result)):
-                response_dict = json.loads(result[i])
-                keys_merge = "".join(response_dict)
-                print(keys_merge)
-                if "uuidheaderbodyuser_uuid" in keys_merge:
-                    note = {}
-                    for key in response_dict:
-                        if "uuid" == key:
-                            note["id"] = response_dict[key]
-                        if "header" == key:
-                            note["title"] = response_dict[key]
-                        if "body" == key:
-                            note["text"] = response_dict[key]
-                notes.append(note)
-        # notes = Note.objects.all()
+#         user_uid = request.user.id
+#         # note = Note()
+#         # note.print_note(user_uid)
+#         notes = []
+# #        response = requests.get(f'http://0.0.0.0:10003/api/notes?user_uuid={user_uid}')
+#         response = requests.get(f'http://84.38.180.103:10003/api/notes?user_uuid={user_uid}')
+# #        response = requests.get('http://127.0.0.1:53210')
+#         if response:
+#
+#             result = re.findall('{[^{}]*}', response.text)
+#             for i in range(0, len(result)):
+#                 response_dict = json.loads(result[i])
+#                 keys_merge = "".join(response_dict)
+#                 print(keys_merge)
+#                 if "uuidheaderbodyuser_uuid" in keys_merge:
+#                     note = {}
+#                     for key in response_dict:
+#                         if "uuid" == key:
+#                             note["id"] = response_dict[key]
+#                         if "header" == key:
+#                             note["title"] = response_dict[key]
+#                         if "body" == key:
+#                             note["text"] = response_dict[key]
+#                 notes.append(note)
+        notes = Note.objects.all()
         return render(request, 'main/index.html', {'title': f'Главная страница сайта', 'notes': notes})
     elif request.method == 'POST':
         return render(request, 'main/index.html', {'title': 'Главная страница сайта'})
@@ -183,6 +187,7 @@ def key_ssl(request):
         private_key = random.getrandbits(256)
         cache.set('key_cache', private_key)
         A = pow(settings.G, private_key, settings.P)
+        cache.set('server_partitial', A)
 
         print(f"session_key = {session_key}\nprivate_key = {private_key}\nA = {A}")
         print(f"settings.P = {settings.P}")
@@ -200,20 +205,28 @@ def key_ssl(request):
         key_client_partitial = int(json_body['key_client'])
         key_client_full = int(json_body['key_full'])
         msg_title = str(json_body['title'])
-        msg_text = str(json_body['text'])
-        print(f"title:{msg_title}\ntext:{msg_text}")
+        msg_enc = str(json_body['text'])
+        print(f"title:{msg_title}\ntext:{msg_enc}")
 
         private_key_cache = cache.get('key_cache')
+        server_key_partitial = cache.get('server_partitial')
 
         print(f"key_client: {type(key_client_partitial)}\nkey_part_client:{key_client_partitial}")
         key_full = pow(key_client_partitial, private_key_cache, settings.P)
         print(key_full)
         if key_full == key_client_full:
             print('Session key is correct')
-            request_data = {'header': msg_title, 'body': msg_text, 'user_uuid': "b545d618-ff44-4319-9c88-2100d9928f32"}
+
+            dh_class = DH_Endpoint(settings.G, settings.P, private_key_cache)
+            dh_full_key = dh_class.generate_full_key(key_client_partitial)
+            print(dh_full_key)
+            str_msg = dh_class.decrypt_message(msg_enc)
+            print(str_msg)
+
+            request_data = {'header': msg_title, 'body': str_msg, 'user_uuid': "b545d618-ff44-4319-9c88-2100d9928f32"}
             data = json.dumps(request_data, indent=2).encode('utf-8')
             #        response = requests.post('http://0.0.0.0:10003/api/notes', data)
-            response = requests.post('http://84.38.180.103:10003/api/notes', data)
+            # response = requests.post('http://84.38.180.103:10003/api/notes', data)
 
             return redirect('home')
 
@@ -271,7 +284,7 @@ def edit(request, id):
         if request.method == 'POST':
             title = request.POST['title']
             text = request.POST['text']
-#            note.save()
+            # note.save()
             request_data = {'header': title, 'body': text}
             data = json.dumps(request_data, indent=2).encode('utf-8')
 #            response = requests.patch(f'http://0.0.0.0:10003/api/{id}', data)

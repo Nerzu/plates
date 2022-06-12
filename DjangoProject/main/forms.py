@@ -80,4 +80,4 @@ class NoteForm(ModelForm):
             #print(request_data)
             data = json.dumps(request_data, indent=2).encode('utf-8')
 #            response = requests.post('http://127.0.0.1:10003/api/notes', data)
-           response = requests.post('http://84.38.180.103:10003/api/notes', data)
+#            response = requests.post('http://84.38.180.103:10003/api/notes', data)

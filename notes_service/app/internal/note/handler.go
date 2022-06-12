@@ -46,12 +46,6 @@ func (h *Handler) GetHeadersByUser(w http.ResponseWriter, r *http.Request) error
 	if err != nil {
 		return err
 	}
-	fmt.Println("start")
-	for _, v := range notes {
-		decryptedAES := crypto.DecryptAES256(v.Body, constkey)
-		v.Body = decryptedAES
-	}
-
 	notesBytes, err := json.Marshal(notes)
 	if err != nil {
 		return err

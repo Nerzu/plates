@@ -58,7 +58,6 @@ func (s *db) FindOne(ctx context.Context, uuid string) (n note.Note, err error) 
 }
 
 func (s *db) FindHeadersByUserUUID(ctx context.Context, userUUID string) (notes []note.Note, err error) {
-
 	filter := bson.M{"user_uuid": bson.M{"$eq": userUUID}}
 	opts := options.FindOptions{
 		Projection: bson.M{"body": 0},

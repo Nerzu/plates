@@ -1,16 +1,14 @@
 package note
 
 import (
-	"crypto/aes"
-	"crypto/cipher"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"github.com/GermanBogatov/notes_service/app/internal/apperror"
+	"github.com/GermanBogatov/notes_service/app/internal/crypto"
 	"github.com/GermanBogatov/notes_service/app/pkg/logging"
 	"github.com/julienschmidt/httprouter"
-	"io"
 	"net/http"
 )
 
@@ -43,10 +41,17 @@ func (h *Handler) GetHeadersByUser(w http.ResponseWriter, r *http.Request) error
 	if userUUID == "" {
 		return apperror.BadRequestError("user_uuid query parameter is required and must be a comma separated integers")
 	}
+
 	notes, err := h.NoteService.GetHeadersByUserUUID(r.Context(), userUUID)
 	if err != nil {
 		return err
 	}
+	fmt.Println("start")
+	for _, v := range notes {
+		decryptedAES := crypto.DecryptAES256(v.Body, constkey)
+		v.Body = decryptedAES
+	}
+
 	notesBytes, err := json.Marshal(notes)
 	if err != nil {
 		return err
@@ -68,9 +73,13 @@ func (h *Handler) GetNote(w http.ResponseWriter, r *http.Request) error {
 	if noteUUID == "" {
 		return apperror.BadRequestError("uuid query parameter is required and must be a comma separated integers")
 	}
+
+	h.Logger.Debug("Get note")
 	note, err := h.NoteService.GetOne(r.Context(), noteUUID)
-	/*decryptedAES := decryptAES256(note.Body, constkey)
-	note.Body = decryptedAES*/
+	h.Logger.Debug("Encrypted body")
+	decryptedAES := crypto.DecryptAES256(note.Body, constkey)
+
+	note.Body = decryptedAES
 	if err != nil {
 		return err
 	}
@@ -99,6 +108,12 @@ func (h *Handler) GetNotesByUser(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
+	h.Logger.Debug("Decrypted body")
+	for i, v := range notes {
+		encbody := crypto.DecryptAES256(v.Body, constkey)
+		notes[i].Body = encbody
+	}
+	fmt.Println("notes : ", notes)
 	notesBytes, err := json.Marshal(notes)
 	if err != nil {
 		return err
@@ -119,9 +134,13 @@ func (h *Handler) CreateNote(w http.ResponseWriter, r *http.Request) error {
 	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
 		return apperror.BadRequestError("invalid data")
 	}
-	/*encryptedAES := encryptAES256(dto.Body, constkey)
-	fmt.Printf("encrypted AES: %s\n", encryptedAES)
-	dto.Body = encryptedAES*/
+
+	dto.UUID = GenerateKeyUIID()
+	h.Logger.Debug("Encrypted body")
+	encryptedAES := crypto.EncryptAES256(dto.Body, constkey)
+	dto.Body = encryptedAES
+
+	h.Logger.Debug("Create body")
 	noteUUID, err := h.NoteService.Create(r.Context(), dto)
 	if err != nil {
 		return err
@@ -152,6 +171,11 @@ func (h *Handler) PartiallyUpdateNote(w http.ResponseWriter, r *http.Request) er
 
 	dto.UUID = noteUUID
 
+	h.Logger.Debug("Encrypted body")
+	encryptedAES := crypto.EncryptAES256(dto.Body, constkey)
+	dto.Body = encryptedAES
+
+	h.Logger.Debug("Update notes")
 	err := h.NoteService.Update(r.Context(), dto)
 	if err != nil {
 		return err
@@ -181,46 +205,11 @@ func (h *Handler) DeleteNote(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-func encryptAES256(stringToEncrypt string, keyString string) (encryptedString string) {
-
-	key, _ := hex.DecodeString(keyString)
-	plaintext := []byte(stringToEncrypt)
-
-	block, err := aes.NewCipher(key)
-	if err != nil {
+func GenerateKeyUIID() (key string) {
+	bytesuuid := make([]byte, 16)
+	if _, err := rand.Read(bytesuuid); err != nil {
 		panic(err.Error())
 	}
-
-	aesGCM, err := cipher.NewGCM(block)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	nonce := make([]byte, aesGCM.NonceSize())
-	if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
-		panic(err.Error())
-	}
-	ciphertext := aesGCM.Seal(nonce, nonce, plaintext, nil)
-	return fmt.Sprintf("%x", ciphertext)
-}
-
-func decryptAES256(encryptedString string, keyString string) (decryptedString string) {
-
-	key, _ := hex.DecodeString(keyString)
-	enc, _ := hex.DecodeString(encryptedString)
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		panic(err.Error())
-	}
-	aesGCM, err := cipher.NewGCM(block)
-	if err != nil {
-		panic(err.Error())
-	}
-	nonceSize := aesGCM.NonceSize()
-	nonce, ciphertext := enc[:nonceSize], enc[nonceSize:]
-	plaintext, err := aesGCM.Open(nil, nonce, ciphertext, nil)
-	if err != nil {
-		panic(err.Error())
-	}
-	return fmt.Sprintf("%s", plaintext)
+	key = hex.EncodeToString(bytesuuid)
+	return key
 }

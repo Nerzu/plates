@@ -8,7 +8,6 @@ import (
 	"github.com/GermanBogatov/notes_service/app/internal/note"
 	"github.com/GermanBogatov/notes_service/app/pkg/logging"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"time"
@@ -35,20 +34,13 @@ func (s *db) Create(ctx context.Context, note note.Note) (uuid string, err error
 	if err != nil {
 		return "", fmt.Errorf("failed to execute query. error: %w", err)
 	}
+	oid := result.InsertedID
 
-	oid, ok := result.InsertedID.(primitive.ObjectID)
-	if ok {
-		return oid.Hex(), nil
-	}
-	return "", fmt.Errorf("failed to convet objectid to hex")
+	return fmt.Sprintf("%s", oid), nil
 }
 
 func (s *db) FindOne(ctx context.Context, uuid string) (n note.Note, err error) {
-	objectID, err := primitive.ObjectIDFromHex(uuid)
-	if err != nil {
-		return n, fmt.Errorf("failed to convert hex to objectid. error: %w", err)
-	}
-	filter := bson.M{"_id": objectID}
+	filter := bson.M{"_id": uuid}
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 	result := s.collection.FindOne(ctx, filter)
@@ -106,12 +98,7 @@ func (s *db) FindByUserUUID(ctx context.Context, userUUID string) (notes []note.
 }
 
 func (s *db) Update(ctx context.Context, note note.Note) error {
-	objectID, err := primitive.ObjectIDFromHex(note.UUID)
-	if err != nil {
-		return fmt.Errorf("failed to parse note uuid due to error %w", err)
-	}
-
-	filter := bson.M{"_id": objectID}
+	filter := bson.M{"_id": note.UUID}
 
 	noteByte, err := bson.Marshal(note)
 	if err != nil {
@@ -146,11 +133,7 @@ func (s *db) Update(ctx context.Context, note note.Note) error {
 }
 
 func (s *db) Delete(ctx context.Context, uuid string) error {
-	objectID, err := primitive.ObjectIDFromHex(uuid)
-	if err != nil {
-		return fmt.Errorf("failed to parse note uuid")
-	}
-	filter := bson.M{"_id": objectID}
+	filter := bson.M{"_id": uuid}
 
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()

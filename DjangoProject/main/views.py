@@ -216,6 +216,10 @@ def check_pin_code(request):
         return render(request, 'registration/twofactor.html', context)
 
 def logout(request):
+    try:
+        del request.session
+    except KeyError:
+        pass
     return render(request, 'registration/logged_out.html')
 
 @csrf_exempt

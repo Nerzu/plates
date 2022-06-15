@@ -6,9 +6,19 @@
 
 {% block content %}
 
-{% if form.errors %}
-  <p>Your username and password didn't match. Please try again.</p>
+<div>
+    {% if form.errors %}
+    Неправильно введён логин или пароль
+{#    {% for field in form %}#}
+{#        {% for error in field.errors %}#}
+{#          {{ error }}<br>#}
+{#        {% endfor %}#}
+{#    {% endfor %}#}
+{#    {% for error in form.non_field_errors %}#}
+{#        {{ error }}<br>#}
+{#    {% endfor %}#}
 {% endif %}
+</div>
 
 {% if next %}
   {% if user.is_authenticated %}
@@ -19,32 +29,19 @@
   {% endif %}
 {% endif %}
 
-<form method="post" action="{% url 'login' %}">
-{% csrf_token %}
-<table>
-{{ form.as_p }}
+<form action="{% url 'login_my' %}" method="post">
+    {% csrf_token %}
     <tr>
-          <td>&nbsp;</td>
-          <td><input type="submit" value="Submit"></td>
-        </tr>
-      </table>
-    </form>
-{#<tr>#}
-{#  <td>{{ form.username.label_tag }}</td>#}
-{#  <td>{{ form.username }}</td>#}
-{#</tr>#}
-{##}
-{#<tr>#}
-{#  <td>{{ form.password.label_tag }}</td>#}
-{#  <td>{{ form.password }}</td>#}
-{#</tr>#}
-{#</table>#}
-{##}
-{#<input type="submit" value="login" />#}
-{#<input type="hidden" name="next" value="{{ next }}" />#}
-{#</form>#}
-{##}
-{# Assumes you setup the password_reset view in your URLconf #}
-{#<p><a href="{% url 'password_reset' %}">Lost password?</a></p>#}
+        <div class="form-group">
+            <label class="small mb-1" for="{{ form.username.id_for_label }}"> Имя пользователя</label>
+            <td>{{ form.username }}</td></tr>
+        </div>
+        <div class="form-group">
+            <label class="small mb-1" for="{{ form.password.id_for_label }}"> Пароль</label>
+            <td>{{ form.password }}</td></tr>
+        </div>
 
+            <input class="btn btn-primary" type="submit" value="Submit"></td>
+        </tr>
+    </form>
 {% endblock %}

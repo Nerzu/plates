@@ -34,7 +34,7 @@ type CreateNoteDTO struct {
 
 type UpdateNoteDTO struct {
 	UUID     string `json:"uuid" bson:"_id,omitempty"`
-	Header   string `json:"header,omitempty" bson:"header,omitempty"`
+	Header   string `json:"header" bson:"header,omitempty"`
 	Body     string `json:"body,omitempty" bson:"body,omitempty"`
 	UserUUID string `json:"user_uuid,omitempty" bson:"user_uuid,omitempty"`
 }

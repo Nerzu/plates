@@ -1,0 +1,18 @@
+{% extends 'main/base.html' %}
+
+{% block title %}
+Регистрация
+{% endblock %}
+
+{% block content %}
+    <h1>Введите код</h1>
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+            <p>Ваш код для Google Authenticator
+            <p>{{ show_code_text }}</p>
+        </div>
+{#        <span>{{ error }}</span>#}
+    </form>
+    
+{% endblock %}

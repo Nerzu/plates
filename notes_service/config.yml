@@ -3,7 +3,7 @@
 is_debug: true
 listen:
   type: port
-  bind_ip: 127.0.0.1
+  bind_ip: 84.38.180.103
   port: 10003
 mongodb:
   host: 127.0.0.1

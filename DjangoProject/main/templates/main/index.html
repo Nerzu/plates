@@ -9,7 +9,7 @@
     {% if notes %}
     {% for key, element in notes.items %}
         <div class="alert alert-warning mt-2">
-            <td>id:{{ element.message_hash }}</td>
+            <td>id:{{ element.uuid_piece_2}}</td>
             <h3>{{ element.title }}</h3>
             <p>{{ element.text }}</p>
             <td><a href="edit/{{element.uuid_piece_1}}/{{element.uuid_piece_2}}">Изменить</a></td> | <td><a href="delete/{{element.uuid_piece_1}}/{{element.uuid_piece_2}}">Удалить</a></td>

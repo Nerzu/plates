@@ -9,6 +9,7 @@ type Note struct {
 
 func NewNote(dto CreateNoteDTO) Note {
 	return Note{
+		UUID:     dto.UUID,
 		Header:   dto.Header,
 		Body:     dto.Body,
 		UserUUID: dto.UserUUID,
@@ -25,6 +26,7 @@ func UpdatedNote(dto UpdateNoteDTO) Note {
 }
 
 type CreateNoteDTO struct {
+	UUID     string `json:"uuid" bson:"_id"`
 	Header   string `json:"header" bson:"header"`
 	Body     string `json:"body" bson:"body"`
 	UserUUID string `json:"user_uuid" bson:"user_uuid"`

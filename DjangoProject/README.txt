@@ -5,3 +5,6 @@
 5.In Pycharm-Terminal run:
 	5.1 python manage.py migrate
 	5.2 python manage.py runserver
+	
+Run with HTTPS:
+python manage.py runserver_plus --cert-file cert.pem --key-file key.pem --keep-meta-shutdown 0.0.0.0:443

@@ -23,13 +23,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-7(-xn0ekoyxtyc@p@uwkcn$xypofuxzuece#(h)7%cpd_vs!a^'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "84.38.180.103"]
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "84.38.180.103", "bipbipwruum.ru"]
 
 
 # DH data
-P = 114454352258618336192858445991095376892568036802441830957445273627422796190483
+# P = 114454352258618336192858445991095376892568036802441830957445273627422796190483
+P = 11445
 G = 5
 
 # Application definition

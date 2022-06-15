@@ -3,6 +3,8 @@ import pyotp
 import random
 import requests
 import re
+import cryptocode
+import os
 from django.contrib import auth
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
@@ -49,8 +51,9 @@ class DH_Endpoint():
        return partial_key
 
    def generate_full_key(self, partial_key_r):
-       full_key = partial_key_r ** self.private_key
-       full_key = full_key % self.public_key2
+       # full_key = partial_key_r ** self.private_key
+       # full_key = full_key % self.public_key2
+       full_key  = pow(partial_key_r, self.private_key, self.public_key2)
        self.full_key = full_key
        return full_key
 
@@ -70,7 +73,6 @@ class DH_Endpoint():
 
 
 
-
 @login_required(login_url='login_my')
 def index(request):
     if request.method == 'GET':
@@ -82,21 +84,13 @@ def index(request):
         #############################################################################################################################
         #Создаем словарь для хранения заметок
         #Он будет иметь вид:
-        #{ 'message_hash' : {"text" : decrcrypted text, "title" : title "uuid_piece_1" : uuid_piece_1, "uuid_piece_2" : uuid_piece_2}
+        #{ 'message_hash' : {"text" : decrcrypted text, "title" : title, "uuid_piece_1" : uuid_piece_1, "uuid_piece_2" : uuid_piece_2}
         #############################################################################################################################
         notes = {}
 #        response = requests.get(f'http://0.0.0.0:10003/api/notes?user_uuid={user_uid}')
         response = requests.get(f'http://84.38.180.103:10003/api/notes?user_uuid={user_uid}')
 #        response = requests.get(f'http://127.0.0.1:10003/api/notes?user_uuid={user_uid}')
         if response:
-            #            for item in re.findall('{[^{}]*}', response.text):
-            #                note_dict = json.loads(json.dumps(item))
-            #                note = Note()
-            #                note.title = note_dict["header"]
-            #                note.text = note_dict["body"]
-            #                print(note_dict)
-            #                notes.append(note)
-            #print(response.text)
             result = re.findall('{[^{}]*}', response.text)
             for i in range(0, len(result)):
                 response_dict = json.loads(result[i])
@@ -105,14 +99,16 @@ def index(request):
                 ###################################################################
                 keys_merge = "".join(response_dict)
                 #print(keys_merge)
-                aes_key = 'Sixteen byte key'
+                #aes_key = 'Sixteen byte key'
+                user = User.objects.filter(pk=user_uid).get()
+                aes_key = user.aes_pass
                 aes = AESCipher(aes_key)
                 if "uuidheaderbodyuser_uuid" in keys_merge:
                     note = {}
                     for key in response_dict:
                         if "uuid" == key:
                             note["id"] = response_dict[key]
-                        if "header" in key:
+                        if "header" == key:
                             note["title"] = response_dict[key]
                         if "body" in key:
                             #Извлекаем номер куска сообщения
@@ -123,7 +119,7 @@ def index(request):
                             note["text"] = response_dict[key][33:]
                     #Проверяем, был ли уже извлечен кусок с данным хэш-значением
                     if note["message_hash"] in notes:
-                        #Если был, то добавляем к нему текст из текушего куску и все расшифровываем
+                        #Если был, то добавляем к нему текст из текушего куска и все расшифровываем
                         if note["number_piece"] == "1":
                             text = note["text"] + notes[note["message_hash"]]["text"]
                             decrypted_text = aes.decrypt(text)
@@ -143,7 +139,6 @@ def index(request):
                             notes[note["message_hash"]]["uuid_piece_1"] = note["id"]
                         else:
                             notes[note["message_hash"]]["uuid_piece_2"] = note["id"]
-
         # notes = Note.objects.all()
         return render(request, 'main/index.html', {'title': f'Главная страница сайта', 'notes': notes})
     elif request.method == 'POST':
@@ -162,12 +157,14 @@ def register(request):
         form = UserSignUpForm(data=request.POST)
         user_name = request.POST.get('username')
         secret_key = pyotp.random_base32()
+        aes_password = os.urandom(32)
         if form.is_valid():
             form.save()
             if request.user.is_authenticated:
                 return redirect('home')
             user = User.objects.filter(username=user_name).first()
             user.secret_key = secret_key
+            user.aes_pass = aes_password
             user.save(update_fields=['secret_key'])
             return render(request, 'registration/show_code.html', {'show_code_text': secret_key})
         else:
@@ -228,45 +225,50 @@ def logout(request):
 
 @csrf_exempt
 def key_ssl(request):
-    session_key = random.getrandbits(256)
-    private_key = random.getrandbits(256)
-    cache.set(session_key, private_key)
-    A = pow(settings.G, private_key, settings.P)
-
-    print(f"session_key = {session_key}\nprivate_key = {private_key}\nA = {A}")
 
     if request.method == 'GET':
+        session_key = random.getrandbits(256)
+        private_key = random.getrandbits(256)
+        cache.set('key_cache', private_key)
+        A = pow(settings.G, private_key, settings.P)
+
+        print(f"session_key = {session_key}\nprivate_key = {private_key}\nA = {A}")
+        print(f"settings.P = {settings.P}")
+        print(f"len pricate_key={len(str(private_key))}")
         response = {'p': str(settings.P),
-             'g': settings.G,
-             'A': A,
-             'session_key': str(session_key)
-             }
+            'g': str(settings.G),
+            'A': str(A),
+            'session_key': str(session_key),
+            }
         return JsonResponse(response)
 
     elif request.method == 'POST':
         json_body = json.loads(request.body)
-        print(json_body)
 
+        key_client_partitial = int(json_body['key_client'])
+        key_client_full = int(json_body['key_full'])
+        msg_title = str(json_body['title'])
+        msg_text = str(json_body['text'])
+        print(f"title:{msg_title}\ntext:{msg_text}")
 
+        private_key_cache = cache.get('key_cache')
 
+        print(f"key_client: {type(key_client_partitial)}\nkey_part_client:{key_client_partitial}")
+        key_full = pow(key_client_partitial, private_key_cache, settings.P)
+        print(key_full)
+        if key_full == key_client_full:
+            print('Session key is correct')
+            request_data = {'header': msg_title, 'body': msg_text, 'user_uuid': "b545d618-ff44-4319-9c88-2100d9928f32"}
+            data = json.dumps(request_data, indent=2).encode('utf-8')
+            #        response = requests.post('http://0.0.0.0:10003/api/notes', data)
+            response = requests.post('http://84.38.180.103:10003/api/notes', data)
+#            response = requests.post(f'http://127.0.0.1:10003/api/notes', data)
 
-@csrf_exempt
-def finish_dh(request):
-    """Get B and compute K"""
-    B = request.POST['B']
-    ciphertext = request.POST['password']
-    session_key = request.POST['session_key']
-    private_key = cache.get(session_key)
-    K = pow(B, private_key, settings.P)
-    print(f"password = {ciphertext}\nsession_key = {session_key}\nprivate_key = {private_key}\nB = {B}\nK = {K}")
-    response = TemplateView(
-        request,
-        'finished.html',
-        {   'K': K,
-            'ciphertext': ciphertext,
-        }
-    )
-    return JsonResponse(response)
+            return redirect('home')
+
+        else:
+            print('Session key dont set')
+            return redirect('home')
 
 @csrf_exempt
 def create(request):
@@ -281,14 +283,14 @@ def create(request):
         # print(str(json_body))
         form = NoteForm(request.POST)
         # form.title=json_body["iv"]
+        # form.text=json_body["cipher"]
         # form.save()
 
         if form.is_valid():
 #            form.save()
             form.save2(user_uid)
             # form.getnote("b545d618-ff44-4319-9c88-2100d9928f32")
-            # string = form.title + ';' + form.text
-            # return redirect('home')
+            return redirect('home')
         else:
             error = 'Форма была не верной'
 
@@ -300,6 +302,7 @@ def create(request):
     return render(request, 'main/create.html', context)
 
 def edit(request, id1, id2):
+    user_uid = request.user.id
     try:
 #        response_piece_1 = requests.get(f'http://127.0.0.1:10003/api/notes/{id1}')
         response_piece_1 = requests.get(f'http://84.38.180.103:10003/api/notes/{id1}')
@@ -307,6 +310,7 @@ def edit(request, id1, id2):
         response_piece_2 = requests.get(f'http://84.38.180.103:10003/api/notes/{id2}')
         note = {}
         for response in [response_piece_1, response_piece_2]:
+            print(response.text)
             result = re.findall('{[^{}]*}', response.text)
             response_dict = json.loads(result[0])
 #            keys_merge = "".join(response_dict)
@@ -329,13 +333,13 @@ def edit(request, id1, id2):
                     if "body" in key:
                         text = text + response_dict[key][33:]
 
-        aes_key = 'Sixteen byte key'
+        user = User.objects.filter(pk=user_uid).get()
+        aes_key = user.aes_pass
         aes = AESCipher(aes_key)
         note["text"] = aes.decrypt(text)
         if request.method == 'POST':
             title = request.POST['title']
             text = request.POST['text']
-            aes_key = 'Sixteen byte key'
             aes = AESCipher(aes_key)
             encrypted_text = aes.encrypt(text)
             len_message = len(encrypted_text)
@@ -371,7 +375,6 @@ def edit(request, id1, id2):
 
 def delete(request, id1, id2):
     try:
-        print("We are here")
 #        note = Note.objects.get(id=id)
 #        note.delete()
         for id in [id1, id2]:

@@ -1,11 +1,45 @@
+
+var base = 10
+
+function rnd256() {
+  const bytes = new Uint8Array(32);
+
+  // load cryptographically random bytes into array
+  window.crypto.getRandomValues(bytes);
+
+  // convert byte array to hexademical representation
+  const bytesHex = bytes.reduce((o, v) => o + ('00' + v.toString(16)).slice(-2), '');
+
+  // convert hexademical value to a decimal string
+  return BigInt('0x' + bytesHex).toString(10);
+}
+
+
 function bigPowMod(a, b, c) {
+        // console.log("a:",typeof a,a)
+        // console.log("b:",typeof b,b)
+        // console.log("c:",typeof c,c)
         a = str2bigInt(a, base);
         b = str2bigInt(b, base);
         c = str2bigInt(c, base);
+        // console.log("a:",typeof a,a)
+        // console.log("b:",typeof b,b)
+        // console.log("c:",typeof c,c)
         var result = powMod(a, b, c);
         result = bigInt2str(result, base);
+        // console.log("result:",typeof result,result)
         return result;
       }
+
+function power (a,n,p) {
+    if (n === 0) {
+        return 1
+    } else {
+        if (n % 2 === 0) {
+            power((a * a) % p, n / 2, p)
+        } else ((a * power(a, n - 1, p))) % p
+    }
+}
 
 const generateKey = async () =>
     window.crypto.subtle.generateKey({
@@ -18,6 +52,13 @@ const encode = data => {
 
     return encoder.encode(data)
 }
+
+const decode = byteStream => {
+    const decoder = new TextDecoder()
+
+    return decoder.decode(byteStream)
+}
+
 
 const generateIv = () =>
     window.crypto.getRandomValues(new Uint8Array(12))
@@ -36,6 +77,26 @@ const encrypt = async (data, key) => {
     }
 }
 
+function encrypt_msg (data, key) {
+    var enc_msg = '';
+    let str_msg = data;
+    var i =0
+
+    // console.log('type key:', typeof key)
+
+    for(i=0; i<str_msg.length; i++){
+        // console.log((str_msg[i].charCodeAt(0))+key)
+        // console.log('type str_msg[i].charCodeAt(0):', typeof str_msg[i].charCodeAt(0))
+
+        enc_msg+=String.fromCharCode((str_msg[i].charCodeAt(0))+key);
+        // enc_msg+=String.fromCharCode((str_msg[i].charCodeAt(0))-key);
+        // console.log(enc_msg);
+    }
+    // console.log("enc_data:", enc_msg.toString())
+    return  enc_msg.toString()
+}
+
+
 const pack = buffer => window.btoa(
     String.fromCharCode.apply(null, new Uint8Array(buffer))
 )
@@ -52,11 +113,7 @@ const unpack = packed => {
     return buffer
 }
 
-const decode = byteStream => {
-    const decoder = new TextDecoder()
 
-    return decoder.decode(byteStream)
-}
 
 const decrypt = async (cipher, key, iv) => {
     const encoded = await window.crypto.subtle.decrypt({
@@ -68,7 +125,8 @@ const decrypt = async (cipher, key, iv) => {
 }
 
 // поле для ввода сообщения, которое будет зашифровано
-const input = document.querySelector('textarea')
+const input_title = document.querySelector('input')
+const input_text = document.querySelector('textarea')
 // контейнер для вывода результатов
 const output = document.querySelector('output')
 
@@ -76,45 +134,88 @@ const output = document.querySelector('output')
 let key
 
 const encryptAndSendMsg = async () => {
-    const msg = input.value
+    const title = input_title.value
+    const msg = input_text.value
 
     // шифрование
-    key = await generateKey()
+    // key = await generateKey()
 
     url = 'http://127.0.0.1:8000/key_ssl'
     // url+= '?client_partial=11111111111111' //+ pack(key)
-    console.log(url)
+    // console.log(url)
 
     let response = await fetch(url);
-
-
     let text = await response.text(); // прочитать тело ответа как текст
-
-    console.log(text)
+    // console.log(text)
     let response_json = JSON.parse(text)
 
+    // var key_s = parseInt(response_json['session_key'], 10)
+    // var key_p = parseInt(response_json['p'], 10)
+    // var key_p_server = parseInt(response_json['g'], 10)
+    // var key_server = parseInt(response_json['A'], 10)
     var key_s = response_json['session_key']
     var key_p = response_json['p']
-    console.log(key_s)
-    console.log(key_p)
-    console.log(response_json['p'])
+    var key_p_server = response_json['g']
+    var key_server = response_json['A']
+    // console.log("key_session:", typeof key_s,key_s)
+    // console.log("key_public:", typeof key_p, key_p)
+    // console.log("key_server:", typeof key_server, key_server)
 
-    const {
-        cipher,
-        iv
-    } = await encrypt(msg, key_s)
-    console.log(msg)
-    console.log(cipher)
-    decrypt_msg = decrypt(cipher, key, iv)
-    console.log(decrypt_msg)
+    // var private_key_client = '57864519447101809354481595270012471035729382219440199100252543963896390963236'
+    var private_key_client = rnd256()
+    // console.log('test_2256:', typeof test_256, test_256)
 
-    await fetch('http://127.0.0.1:8000/create', {
-        method: 'POST',
+
+    // console.log("private_key_client:", typeof private_key_client, private_key_client)
+
+    var key_client = bigPowMod(key_p_server,private_key_client, key_p)
+    // console.log("key_client:",key_client)
+
+    // console.log("title:",title)
+    // console.log("text:",msg)
+
+    var key_full = bigPowMod(key_server, private_key_client, key_p)
+    // console.log("key_full:",key_full)
+
+    key_enc = parseInt(key_full, 10)
+
+    enc_msg =encrypt_msg(msg, key_enc)
+    // console.log("enc_msg:", enc_msg)
+
+    let response_two = await fetch(url,
+        {
+            method: 'POST',
         body: JSON.stringify({
-            text: pack(cipher),
-            title: pack(iv)
-        })
-    })
+            key_client: key_client,
+            key_full: key_full,
+            title: title,
+            text: String(enc_msg),
+            })
+        });
+
+    input_title.value = 'success'
+    input_text.value = 'success'
+
+    // let text_two = await response.text(); // прочитать тело ответа как текст
+    // console.log(text)
+    // let response_json_two = JSON.parse(text_two)
+
+    // const {
+    //     cipher,
+    //     iv
+    // } = await encrypt(msg, key_s)
+    // console.log(msg)
+    // console.log(cipher)
+    // decrypt_msg = decrypt(cipher, key, iv)
+    // console.log(decrypt_msg)
+    //
+    // await fetch('http://127.0.0.1:8000/create', {
+    //     method: 'POST',
+    //     body: JSON.stringify({
+    //         text: pack(cipher),
+    //         title: pack(iv)
+    //     })
+    // })
     //
     // output.innerHTML = `Сообщение <span>"${msg}"</span> зашифровано.<br>Данные отправлены на сервер.`
 }

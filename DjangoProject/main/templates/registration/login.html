@@ -8,14 +8,15 @@
 
 <div>
     {% if form.errors %}
-    {% for field in form %}
-        {% for error in field.errors %}
-          {{ error }}<br>
-        {% endfor %}
-    {% endfor %}
-    {% for error in form.non_field_errors %}
-        {{ error }}<br>
-    {% endfor %}
+    Неправильно введён логин или пароль
+{#    {% for field in form %}#}
+{#        {% for error in field.errors %}#}
+{#          {{ error }}<br>#}
+{#        {% endfor %}#}
+{#    {% endfor %}#}
+{#    {% for error in form.non_field_errors %}#}
+{#        {{ error }}<br>#}
+{#    {% endfor %}#}
 {% endif %}
 </div>
 

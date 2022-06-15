@@ -1,13 +1,12 @@
 {% extends 'main/base.html' %}
 {% block title %}
-Страница про нас
+Создать заметку
 {% endblock %}
 
 
 {% block content %}
     <p id="paragraph"></p>
-    <h1>Страница о нас</h1>
-    <p1>Страница о нас</p1>
+    <h1>Создать заметку</h1>
     {{ form.title }}<br>
     {{ form.text }}<br>
 {#    <input type="text" value="value2" class="form-control">#}
@@ -24,6 +23,6 @@
 
 
 <script src="/static/client.js"></script>
-{#<script src="/static/rsa_crypt.js"></script>#}
+<script src="/static/libbigint.js"></script>
 {% endblock %}
 

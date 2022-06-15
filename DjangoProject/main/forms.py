@@ -2,6 +2,7 @@ import requests
 import json
 from .aes_crypto import AESCipher
 import hashlib
+import rsa
 
 from .models import Note, User, TwoFactor
 from django import forms
@@ -51,8 +52,11 @@ class NoteForm(ModelForm):
         }
 
     def save2(self, user_uid):
-        key = 'Sixteen byte key'
-        aes = AESCipher(key)
+        #key = 'Sixteen byte key'
+        user = User.objects.filter(pk=user_uid).get()
+        aes_key = user.aes_pass
+        aes = AESCipher(aes_key)
+        print('The aes password is {}'.format(aes_key))
         cleaned_data = self.cleaned_data
         title = cleaned_data["title"]
         text = cleaned_data["text"]
@@ -69,15 +73,22 @@ class NoteForm(ModelForm):
         #print("The hash value is {}".format(hash_value))
         ###################################################################
         #Тело сообщения состоит из метки части, хэш-значения сообщения (используется для однозначной идентификации сообщения)
-        # и половине шифрованного телап сообщения)
+        # и половине шифрованного тела сообщения)
         #####################################################################################################################
         message_1 = "1" + str(hash_value) + encrypted_text[:len_message//2]
         message_2 = "2" + str(hash_value) + encrypted_text[len_message // 2:]
         for message in [message_1, message_2]:
             print("The {} is \n{}".format((lambda x: "message 1" if message == message_1 else "message 2")(message), message))
-
-            request_data = {'header': title, 'body': message, 'user_uuid': str(user_uid)}
+            ##################################################################################################
+            #Убрать на хер
+            #(pubkey, privkey) = rsa.newkeys(2048)
+            #message_enc = message.encode()
+            #signature = rsa.sign(message_enc, privkey, 'SHA-256')
+            #request_data = {'header': title, 'body': message, 'sign': signature,  'user_uuid': str(user_uid)}
             #print(request_data)
+            #print(pubkey)
+            ##################################################################################################
+            request_data = {'header': title, 'body': message, 'user_uuid': str(user_uid)}
             data = json.dumps(request_data, indent=2).encode('utf-8')
 #            response = requests.post('http://127.0.0.1:10003/api/notes', data)
-           response = requests.post('http://84.38.180.103:10003/api/notes', data)
+            response = requests.post('http://84.38.180.103:10003/api/notes', data)

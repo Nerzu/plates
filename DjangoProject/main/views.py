@@ -4,6 +4,7 @@ import random
 import requests
 import re
 import cryptocode
+import os
 from django.contrib import auth
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
@@ -72,6 +73,7 @@ class DH_Endpoint():
 
 
 
+
 @login_required(login_url='login_my')
 def index(request):
     if request.method == 'GET':
@@ -83,7 +85,7 @@ def index(request):
         #############################################################################################################################
         #Создаем словарь для хранения заметок
         #Он будет иметь вид:
-        #{ 'message_hash' : {"text" : decrcrypted text, "title" : title "uuid_piece_1" : uuid_piece_1, "uuid_piece_2" : uuid_piece_2}
+        #{ 'message_hash' : {"text" : decrcrypted text, "title" : title, "uuid_piece_1" : uuid_piece_1, "uuid_piece_2" : uuid_piece_2}
         #############################################################################################################################
         notes = {}
 #        response = requests.get(f'http://0.0.0.0:10003/api/notes?user_uuid={user_uid}')
@@ -98,7 +100,9 @@ def index(request):
                 ###################################################################
                 keys_merge = "".join(response_dict)
                 #print(keys_merge)
-                aes_key = 'Sixteen byte key'
+                #aes_key = 'Sixteen byte key'
+                user = User.objects.filter(pk=user_uid).get()
+                aes_key = user.aes_pass
                 aes = AESCipher(aes_key)
                 if "uuidheaderbodyuser_uuid" in keys_merge:
                     note = {}
@@ -116,7 +120,7 @@ def index(request):
                             note["text"] = response_dict[key][33:]
                     #Проверяем, был ли уже извлечен кусок с данным хэш-значением
                     if note["message_hash"] in notes:
-                        #Если был, то добавляем к нему текст из текушего куску и все расшифровываем
+                        #Если был, то добавляем к нему текст из текушего куска и все расшифровываем
                         if note["number_piece"] == "1":
                             text = note["text"] + notes[note["message_hash"]]["text"]
                             decrypted_text = aes.decrypt(text)
@@ -154,12 +158,14 @@ def register(request):
         form = UserSignUpForm(data=request.POST)
         user_name = request.POST.get('username')
         secret_key = pyotp.random_base32()
+        aes_password = os.urandom(32)
         if form.is_valid():
             form.save()
             if request.user.is_authenticated:
                 return redirect('home')
             user = User.objects.filter(username=user_name).first()
             user.secret_key = secret_key
+            user.aes_pass = aes_password
             user.save(update_fields=['secret_key'])
             return render(request, 'registration/show_code.html', {'show_code_text': secret_key})
         else:
@@ -300,6 +306,7 @@ def create(request):
     return render(request, 'main/create.html', context)
 
 def edit(request, id1, id2):
+    user_uid = request.user.id
     try:
 #        response_piece_1 = requests.get(f'http://127.0.0.1:10003/api/notes/{id1}')
         response_piece_1 = requests.get(f'http://84.38.180.103:10003/api/notes/{id1}')
@@ -307,6 +314,7 @@ def edit(request, id1, id2):
         response_piece_2 = requests.get(f'http://84.38.180.103:10003/api/notes/{id2}')
         note = {}
         for response in [response_piece_1, response_piece_2]:
+            print(response.text)
             result = re.findall('{[^{}]*}', response.text)
             response_dict = json.loads(result[0])
 #            keys_merge = "".join(response_dict)
@@ -329,13 +337,13 @@ def edit(request, id1, id2):
                     if "body" in key:
                         text = text + response_dict[key][33:]
 
-        aes_key = 'Sixteen byte key'
+        user = User.objects.filter(pk=user_uid).get()
+        aes_key = user.aes_pass
         aes = AESCipher(aes_key)
         note["text"] = aes.decrypt(text)
         if request.method == 'POST':
             title = request.POST['title']
             text = request.POST['text']
-            aes_key = 'Sixteen byte key'
             aes = AESCipher(aes_key)
             encrypted_text = aes.encrypt(text)
             len_message = len(encrypted_text)

@@ -2,11 +2,13 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 import json
 import requests
+import os
 
 # Create your models here.
 class User(AbstractUser):
     secret_key = models.CharField(max_length=255)
     image = models.ImageField(upload_to='users_images', blank=True)
+    aes_pass = models.CharField(max_length=256)
 
 class TwoFactor(models.Model):
     pin_code = models.CharField(max_length=6)

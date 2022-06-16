@@ -78,29 +78,13 @@ class DH_Endpoint():
 def index(request):
     if request.method == 'GET':
         user_uid = request.user.id
-        # note = Note()
-        # note.print_note(user_uid)
-        #print(user_uid)
-        #notes = []
-        #############################################################################################################################
-        #Создаем словарь для хранения заметок
-        #Он будет иметь вид:
-        #{ 'message_hash' : {"text" : decrcrypted text, "title" : title, "uuid_piece_1" : uuid_piece_1, "uuid_piece_2" : uuid_piece_2}
-        #############################################################################################################################
         notes = {}
-#        response = requests.get(f'http://0.0.0.0:10003/api/notes?user_uuid={user_uid}')
         response = requests.get(f'http://84.38.180.103:10003/api/notes?user_uuid={user_uid}')
-#        response = requests.get(f'http://127.0.0.1:10003/api/notes?user_uuid={user_uid}')
         if response:
             result = re.findall('{[^{}]*}', response.text)
             for i in range(0, len(result)):
                 response_dict = json.loads(result[i])
-                ###################################################################
-                #print(response_dict["body"][1:33])
-                ###################################################################
                 keys_merge = "".join(response_dict)
-                #print(keys_merge)
-                #aes_key = 'Sixteen byte key'
                 user = User.objects.filter(pk=user_uid).get()
                 aes_key = user.aes_pass
                 aes = AESCipher(aes_key)
@@ -112,15 +96,10 @@ def index(request):
                         if "header" == key:
                             note["title"] = response_dict[key]
                         if "body" in key:
-                            #Извлекаем номер куска сообщения
                             note["number_piece"] = response_dict[key][0]
-                            #Извлекаем хэш-значение
                             note["message_hash"] = response_dict[key][1:33]
-                            #Извлекаем шифрованный кусок тела сообщения
                             note["text"] = response_dict[key][33:]
-                    #Проверяем, был ли уже извлечен кусок с данным хэш-значением
                     if note["message_hash"] in notes:
-                        #Если был, то добавляем к нему текст из текушего куска и все расшифровываем
                         if note["number_piece"] == "1":
                             text = note["text"] + notes[note["message_hash"]]["text"]
                             decrypted_text = aes.decrypt(text)
@@ -132,7 +111,6 @@ def index(request):
                             notes[note["message_hash"]]["text"] = decrypted_text
                             notes[note["message_hash"]]["uuid_piece_2"] = note["id"]
                     else:
-                        #В противном случае создаем новую заметку в словаре notes с ключом равным текущему хэш-значению
                         notes[note["message_hash"]] = {}
                         notes[note["message_hash"]]["text"] = note["text"]
                         notes[note["message_hash"]]["title"] = note["title"]
@@ -140,7 +118,6 @@ def index(request):
                             notes[note["message_hash"]]["uuid_piece_1"] = note["id"]
                         else:
                             notes[note["message_hash"]]["uuid_piece_2"] = note["id"]
-        # notes = Note.objects.all()
         return render(request, 'main/index.html', {'title': f'Главная страница сайта', 'notes': notes})
     elif request.method == 'POST':
         return render(request, 'main/index.html', {'title': 'Главная страница сайта'})
@@ -243,7 +220,6 @@ def key_ssl(request):
         response = {'p': str(settings.P),
             'g': str(settings.G),
             'A': str(A),
-            'session_key': str(session_key),
             }
         return JsonResponse(response)
 
@@ -251,7 +227,6 @@ def key_ssl(request):
         json_body = json.loads(request.body)
 
         key_client_partitial = int(json_body['key_client'])
-        key_client_full = int(json_body['key_full'])
         msg_title = str(json_body['title'])
         msg_text = str(json_body['text'])
         print(f"title:{msg_title}\ntext:{msg_text}")
@@ -261,15 +236,12 @@ def key_ssl(request):
         print(f"key_client: {type(key_client_partitial)}\nkey_part_client:{key_client_partitial}")
         key_full = pow(key_client_partitial, private_key_cache, settings.P)
         print(key_full)
-        if key_full == key_client_full:
+        if key_full:
             print('Session key is correct')
             request_data = {'header': msg_title, 'body': msg_text, 'user_uuid': "b545d618-ff44-4319-9c88-2100d9928f32"}
             data = json.dumps(request_data, indent=2).encode('utf-8')
-            #        response = requests.post('http://0.0.0.0:10003/api/notes', data)
             response = requests.post('http://84.38.180.103:10003/api/notes', data)
-
             return redirect('home')
-
         else:
             print('Session key dont set')
             return redirect('home')
